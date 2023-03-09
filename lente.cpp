@@ -13,10 +13,11 @@ double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total in
 	}
 
 double Curva :: operator()(double x) const{
-	double result=0.0;
-	double c=1.0;
-	for(int i=0;i<Q.size();i++){
-		result+=Q[i]*c;
+	if(Q.Size()==0) return 0;
+	double result=Q.[0];
+	double c=x*PI/Campo;
+	for(int i=1;i<Q.size();i++){
+		result+=Q[i]*cos(i*x*)/i;
 		c *= x*x;
 		}
 	return result;
@@ -56,7 +57,7 @@ double Curva:: Intersect(Raggio in){
 	return x1;
 	}
 	
-Raggio Lente :: Out (std::ofstream& fpt, Raggio I){ //log version
+Raggio Lente :: Out (std::ofstream& fpt, const Raggio& I){ //log version
 	double x=Inf.Intersect(I);
 	Raggio M = Raggio(fpt, x, Inf(x), Snell(I.A-Inf.Angolo(x),N)+Inf.Angolo(x));
 	x=Sup.Intersect(M);
@@ -94,53 +95,85 @@ void Sistema :: Log(std::ofstream &fpt){
 		lente[i].Log(fpt);
 		}
 	}
-double Sistema :: Update(double x){
-	Raggio X = Raggio(x,0,0);
-	double score=Score(X);
+
+double RandomUpdate(vector<Lente>& lente){
+	const double x = rand()*CAMPO/RAND_MAX;
+	double score=Score(lente,x);
 	double safe;
-	Sistema nuovo = *this; 
+	vector<Lente> temp = lente;
 	for(int i=0;i<lente.size();i++){
 		
 		for(int j=0;j<lente[i].Inf.Q.size();j++){
 			safe=lente[i].Inf.Q[j];
 			lente[i].Inf.Q[j]+= e2;
-			nuovo.lente[i].Inf.Q[j] += (Score(X)-score)*e1;
+			temp[i].Inf.Q[j] += (Score(lente,x)-score)*e1;
 			lente[i].Inf.Q[j]=safe;
 			}
 		for(int j=0;j<lente[i].Sup.Q.size();j++){
 			safe=lente[i].Sup.Q[j];
 			lente[i].Sup.Q[j]+=e2;
-			nuovo.lente[i].Sup.Q[j] += (Score(X)-score)*e1;
+			temp[i].Sup.Q[j] += (Score(lente,x)-score)*e1;
 			lente[i].Sup.Q[j]=safe;
 			}
 		}
-	*this=nuovo;
+	lente=temp;
 	return score;
 	}
 
-Raggio Sistema :: Out(Raggio I){
-	Raggio A = I;
-	for(int i=0;i<lente.size();i++){
-		Raggio B = lente[i].Out(A);
-		A=B;
+Raggio vector<Lente> :: Out (Raggio I){ 
+	for(int i=0;i<size();i++){
+		I = at(i).Out(A);
 		}
-	return A;
+	return I;
 	}
-Raggio Sistema :: Out (std::ofstream& fpt, Raggio I){ //log version
-	Raggio A = I;
-	for(int i=0;i<lente.size();i++){
-		Raggio B = lente[i].Out(fpt,A);
-		A=B;
+
+Raggio vector<Lente> :: Out (std::ofstream& fpt,Raggio I){ //log version
+	for(int i=0;i<size();i++){
+		I = at(i).Out(fpt,A);
 		}
-	return A;
+	return I;
 	}
 	
-double Sistema :: Score(Raggio in){
-	if (in.A!=in.A) return -(Campo+DimensioneSensore)*(Campo+DimensioneSensore);
-	double target = - in.X * DimensioneSensore / Campo;
-	double hit = Sensore.Intersect(Out(in));
-	if (hit!=hit) return -(Campo+DimensioneSensore)*(Campo+DimensioneSensore);
+double Score(vector<Lente>& sistema, const double x){
+	Raggio in = Raggio(x,-ALTEZZA_SENSORE/10,0);
+	double target = - x * DIMENSIONE_SENSORE / CAMPO;
+	Raggio out = sistema.Out(in);
+	double hit = (out.Y-ALTEZZA_SENSORE)*tan(out.A);
+	if (hit!=hit) return -(CAMPO+DIMENSIONE_SENSORE)*(CAMPO+DIMENSIONE_SENSORE);
 	double dis = hit - target;
 	return -dis*dis;
 	//return 1.0/(1.0+dis*dis);
 	}
+
+void Gnuplotta(vector<Lente> lente){
+	Curva Sensore = Curva(ALTEZZA_SENSORE)
+	for(int i=0; i < num_raggi; i++){		//creo i file per i singoli raggi
+		ofstream fpt ("dati/"+to_string(i)+".dat");
+		if ((fpt.is_open()) == false){
+        	printf("Error! opening file");
+        	exit(1);
+    		}
+   		Raggio ray = Raggio(fpt,-CAMPO+i*2*CAMPO/num_raggi,0,0.0);
+		for(int i=0;i<lente.size();i++){
+			Raggio a = lente[i].Out(fpt,ray);
+			ray=a;
+			}
+		double x=Sensore.Intersect(ray);
+		ray= Raggio(fpt,x,Sensore(x),0);
+		fpt.close();
+		}
+	ofstream fpt ("data.gp");
+	if ((fpt.is_open()) == false){
+        printf("Error! opening file");
+        exit(1);
+    	}
+    fpt<<("set size ratio -1\nset terminal pdf\nset output 'plot.pdf'\nset nokey\n");
+    fpt<<("plot ["+to_string(-CAMPO)+":"+to_string(CAMPO)+"] [0:"+to_string(Sensore(0))+"] ").c_str();
+    tele.Log(fpt);
+    for(int i=0; i < num_raggi; i++){
+    	fpt<<"'dati/"+to_string(i)+".dat' u 1:2 with lines";
+    	if (i+1<num_raggi) fpt<<", ";
+    	}
+    fpt.close();
+    system("gnuplot -p data.gp");
+    }
