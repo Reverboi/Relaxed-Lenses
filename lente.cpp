@@ -1,24 +1,25 @@
 #include <iostream>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include "lente.hpp"
-#define e 2e-10 // numero piccolo: 'e' sta per epsilon
-#define e1 2e-4 // numero piccolo: 'e' sta per epsilon
-#define e2 4e-21 // numero piccolo: 'e' sta per epsilon
+#define e  ldexp(1.0,-32)  // numero piccolo: 'e' sta per epsilon
+#define e1 ldexp(1.0,-1)   // numero piccolo: 'e' sta per epsilon
+#define e2 ldexp(1.0,-12)  // numero piccolo: 'e' sta per epsilon
 #define MAX_LOOP 10000
-
+#define PI 3.14159265359
+#define num_raggi 20
 double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total internal reflection
 	return asin(sin(angolo)/index);
 	}
 
 double Curva :: operator()(double x) const{
-	if(Q.Size()==0) return 0;
-	double result=Q.[0];
-	double c=x*PI/Campo;
+	if(Q.size()==0) return 0;
+	double result=Q[0];
+	
+	double c=x*PI/(Ampiezza*2);
 	for(int i=1;i<Q.size();i++){
-		result+=Q[i]*cos(i*x*)/i;
-		c *= x*x;
+		result+=Q[i]*cos(i*c)/i;
 		}
 	return result;
 	}
@@ -26,16 +27,16 @@ double Curva :: operator()(double x) const{
 double Curva:: Angolo(double x){return atan(Derivata(x));}
 
 double Curva::Derivata(double x){
+	if(Q.size()==0) return 0;
 	double result=0.0;
-	double c=x;
+	double c=x*PI/(Ampiezza*2);
 	for(int i=1;i<Q.size();i++){
-		result += 2*i*c*Q[i];
-		c *= x*x;
+		result -= Q[i]*sin(i*c)*PI/(Ampiezza*2);
 		}
 	return result;
 	}
 
-double Curva:: Intersect(Raggio in){
+double Curva:: Intersect(const Raggio& in){
 	if(in.A!=in.A) return NAN; //total internal reflection
 	if(in.Y>((*this)(in.X))){  // ...se il raggio è già oltre...
 		return NAN; 
@@ -64,7 +65,7 @@ Raggio Lente :: Out (std::ofstream& fpt, const Raggio& I){ //log version
 	return Raggio(fpt,x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N)+Sup.Angolo(x));
 	}
 
-Raggio Lente :: Out (Raggio I){ //non log version
+Raggio Lente :: Out (const Raggio& I){ //non log version
 	double x=Inf.Intersect(I);
 	Raggio M = Raggio(x, Inf(x), Snell(I.A-Inf.Angolo(x),N)+Inf.Angolo(x));
 	x=Sup.Intersect(M);
@@ -76,9 +77,11 @@ void Raggio :: Log(std::ofstream& fpt){
 	}
 	
 void Curva :: Log(std::ofstream& fpt){
-	if(fpt.is_open()) 
-	for(int i=0;i<Q.size();i++){
-		fpt<<Q[i]<<"*x**"<<i*2<<"+";
+	if(fpt.is_open()){
+		fpt<<Q[0]<<" + ";
+		for(int i=1;i<Q.size();i++){
+			fpt<<Q[i]<<"*cos(x*"<<PI*i/(2*Ampiezza)<<")/"<<i<<" + ";
+			}
 		}
 	fpt<<"0, ";
 	}
@@ -96,84 +99,108 @@ void Sistema :: Log(std::ofstream &fpt){
 		}
 	}
 
-double RandomUpdate(vector<Lente>& lente){
-	const double x = rand()*CAMPO/RAND_MAX;
-	double score=Score(lente,x);
-	double safe;
-	vector<Lente> temp = lente;
-	for(int i=0;i<lente.size();i++){
+double RandomUpdate(Sistema& D){
+	const double x = rand()*D.Campo/RAND_MAX;
+	double sfx,sbx;
+	Sistema fx = D;
+	Sistema bx = D;
+	for(int i=0;i<D.lente.size();i++){
 		
-		for(int j=0;j<lente[i].Inf.Q.size();j++){
-			safe=lente[i].Inf.Q[j];
-			lente[i].Inf.Q[j]+= e2;
-			temp[i].Inf.Q[j] += (Score(lente,x)-score)*e1;
-			lente[i].Inf.Q[j]=safe;
+		for(int j=1;j<D.lente[i].Inf.Q.size();j++){
+			sfx=fx.lente[i].Inf.Q[j];
+			sbx=bx.lente[i].Inf.Q[j];
+			fx.lente[i].Inf.Q[j] += e2;
+			bx.lente[i].Inf.Q[j] -= e2;
+			D.lente[i].Inf.Q[j]  += (Score(fx,x)-Score(bx,x))*e1;
+			fx.lente[i].Inf.Q[j] = sfx;
+			bx.lente[i].Inf.Q[j] = sbx;
 			}
-		for(int j=0;j<lente[i].Sup.Q.size();j++){
-			safe=lente[i].Sup.Q[j];
-			lente[i].Sup.Q[j]+=e2;
-			temp[i].Sup.Q[j] += (Score(lente,x)-score)*e1;
-			lente[i].Sup.Q[j]=safe;
+
+		for(int j=1;j<D.lente[i].Sup.Q.size();j++){
+			sfx=fx.lente[i].Sup.Q[j];
+			sbx=bx.lente[i].Sup.Q[j];
+			fx.lente[i].Sup.Q[j] += e2;
+			bx.lente[i].Sup.Q[j] -= e2;
+			D.lente[i].Sup.Q[j]  += (Score(fx,x)-Score(bx,x))*e1;
+			fx.lente[i].Sup.Q[j]=sfx;
+			bx.lente[i].Sup.Q[j]=sbx;
 			}
 		}
-	lente=temp;
-	return score;
+	return Score(D,x);
 	}
 
-Raggio vector<Lente> :: Out (Raggio I){ 
-	for(int i=0;i<size();i++){
-		I = at(i).Out(A);
+Raggio Sistema :: Out (Raggio I){ 
+	for(int i=0;i<lente.size();i++){
+		I = lente.at(i).Out(I);
 		}
 	return I;
 	}
 
-Raggio vector<Lente> :: Out (std::ofstream& fpt,Raggio I){ //log version
-	for(int i=0;i<size();i++){
-		I = at(i).Out(fpt,A);
+Raggio Sistema :: Out (std::ofstream& fpt,Raggio I){ //log version
+	for(int i=0;i<lente.size();i++){
+		I = lente.at(i).Out(fpt,I);
 		}
 	return I;
 	}
 	
-double Score(vector<Lente>& sistema, const double x){
-	Raggio in = Raggio(x,-ALTEZZA_SENSORE/10,0);
-	double target = - x * DIMENSIONE_SENSORE / CAMPO;
-	Raggio out = sistema.Out(in);
-	double hit = (out.Y-ALTEZZA_SENSORE)*tan(out.A);
-	if (hit!=hit) return -(CAMPO+DIMENSIONE_SENSORE)*(CAMPO+DIMENSIONE_SENSORE);
+double Score(Sistema& D, const double x){
+	Raggio in = Raggio(x,-D.AltezzaSensore/10,0);
+	double target = - x * D.DimensioneSensore / D.Campo;
+	Raggio out = D.Out(in);
+	double hit = out.X+(out.Y-D.AltezzaSensore)*tan(out.A);
+	if (hit!=hit) return -(D.Campo+D.DimensioneSensore)*(D.Campo+D.DimensioneSensore);
 	double dis = hit - target;
 	return -dis*dis;
 	//return 1.0/(1.0+dis*dis);
 	}
-
-void Gnuplotta(vector<Lente> lente){
-	Curva Sensore = Curva(ALTEZZA_SENSORE)
-	for(int i=0; i < num_raggi; i++){		//creo i file per i singoli raggi
-		ofstream fpt ("dati/"+to_string(i)+".dat");
+	
+void Gnuplotta(Sistema& D){
+	for(int i=1; i < num_raggi; i++){		//creo i file per i singoli raggi
+		std::ofstream fpt ("dati/"+std::to_string(i)+".dat");
 		if ((fpt.is_open()) == false){
         	printf("Error! opening file");
         	exit(1);
     		}
-   		Raggio ray = Raggio(fpt,-CAMPO+i*2*CAMPO/num_raggi,0,0.0);
-		for(int i=0;i<lente.size();i++){
-			Raggio a = lente[i].Out(fpt,ray);
+   		Raggio ray = Raggio(fpt,-D.Campo+i*2*D.Campo/num_raggi,0,0.0);
+		for(int i=0;i<D.lente.size();i++){
+			Raggio a = D.lente[i].Out(fpt,ray);
 			ray=a;
 			}
-		double x=Sensore.Intersect(ray);
-		ray= Raggio(fpt,x,Sensore(x),0);
+		double x=D.Sensore.Intersect(ray);
+		ray= Raggio(fpt,x,D.Sensore(x),0);
 		fpt.close();
 		}
-	ofstream fpt ("data.gp");
+	std::ofstream fpt ("data.gp");
 	if ((fpt.is_open()) == false){
         printf("Error! opening file");
         exit(1);
-    	}
-    fpt<<("set size ratio -1\nset terminal pdf\nset output 'plot.pdf'\nset nokey\n");
-    fpt<<("plot ["+to_string(-CAMPO)+":"+to_string(CAMPO)+"] [0:"+to_string(Sensore(0))+"] ").c_str();
-    tele.Log(fpt);
-    for(int i=0; i < num_raggi; i++){
-    	fpt<<"'dati/"+to_string(i)+".dat' u 1:2 with lines";
+    	}/*
+    fpt<<("set terminal pdf\nset output 'errors.pdf'\nset nokey\nplot 'scores.dat' u 1:2 with lines\nset output 'errlogs.pdf'\nplot 'scores.dat' u 1:3 with lines\n");
+    fpt<<("set size ratio -1\nset output 'plot.pdf'\n");
+    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
+    */
+    fpt<<("set terminal pdf\nset output 'plot.pdf'\nset nokey\n");
+    fpt<<("set size ratio -1\n");
+    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
+    D.Log(fpt);
+    for(int i=1; i < num_raggi; i++){
+    	fpt<<"'dati/"+std::to_string(i)+".dat' u 1:2 with lines";
     	if (i+1<num_raggi) fpt<<", ";
     	}
+    fpt<<("\nset size noratio\n");
+    fpt<<("plot 'scores.dat' u 1:2 with lines\nplot 'scores.dat' u 1:3 with lines\n");
     fpt.close();
+    std::ofstream fpy ("scores.dat");
+	if ((fpy.is_open()) == false){
+        printf("Error! opening file");
+        exit(1);
+    	}
+    int pti=100;
+    for(int i=1; i < pti; i++){
+    double x=-D.Campo+i*2*D.Campo/pti;
+    double t=-Score(D,x);
+    fpy<< x <<' '<< t <<' '<< log(t) <<std::endl;
+    }
+    fpy.close();
     system("gnuplot -p data.gp");
     }

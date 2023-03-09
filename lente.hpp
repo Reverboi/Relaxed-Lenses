@@ -7,9 +7,10 @@ struct Raggio{//tutti i raggi viaggiano verso l'alto
 	
 struct Curva{
 	std::vector<double> Q; // Coefficienti di Fourier (solo coseni)
-	Curva (std::vector<double> q) : Q{q}{};
+	Curva (std::vector<double> q,double amp) : Q{q}, Ampiezza(amp) {};
 	void Log(std::ofstream& fpt);
-	Curva (double quota, int ord){ //crea una retta orizzontale con ord coeff a zero
+	double Ampiezza;
+	Curva (double quota, double amp, int ord) : Ampiezza(amp){ //crea una retta orizzontale con ord coeff a zero
 		if(ord<0) exit(0);
 		Q.reserve(ord+1);
 		Q.push_back(quota);
@@ -30,30 +31,30 @@ struct Lente{
 	Raggio Out (std::ofstream &fpt, const Raggio& I);
 	Raggio Out (const Raggio& I);
 	void Log(std::ofstream &fpt);
-	Lente(std::vector<double> inf, std::vector<double> sup, double n) : Inf(inf), Sup(sup), N(n) {};
+	Lente(std::vector<double> inf, std::vector<double> sup, double n, double amp) : Inf(inf,amp), Sup(sup,amp), N(n) {};
 	Lente(Curva inf, Curva sup, double n): Inf(inf), Sup(sup), N(n) {};//afraid
 	};
-
-double RandomUpdate(vector<Lente>& len);
-double Score(vector<Lente>&, double x);
 
 struct Sistema{
 	std::vector<Lente> lente;
 	Curva Sensore;
+	double AltezzaSensore;
 	double DimensioneSensore;
 	double Campo; //Dimensione massima dell'oggetto inquadrato
 	Raggio Out( Raggio in);
 	void Log(std::ofstream& fpt);
 	Raggio Out(std::ofstream &fpt, Raggio in);
 	
-	Sistema(std::vector<double> IndiciRifrazione, double campo, double ps, double ds, int ord) : Sensore(ps,0), DimensioneSensore(ds), Campo(campo) {
+	Sistema(std::vector<double> IndiciRifrazione, double campo, double ps, double ds, int ord) : Sensore(ps,ds,0), AltezzaSensore(ps), DimensioneSensore(ds), Campo(campo) {
 		int n = IndiciRifrazione.size();
 		lente.reserve(n);
 		for(int i = 0; i < n; i++){
 			//lente.push_back( Lente(Curva(ps*(2*(i+1)-1)/(2*n+1),ord),Curva(ps*(2*(i+1))/(2*n+1),ord),IndiciRifrazione[i]));
-			lente.push_back( Lente(Curva(490,ord),Curva(510,ord),IndiciRifrazione[i]));
+			lente.push_back( Lente(Curva(ps*(i+1)/(n+1)-25,campo,ord),Curva(ps*(i+1)/(n+1)+25,campo,ord),IndiciRifrazione[i]));
 			}
 		}
 	};
-
+void Gnuplotta(Sistema&);
+double RandomUpdate(Sistema& len);
+double Score(Sistema&, double x);
 double Snell(double angolo, double index);

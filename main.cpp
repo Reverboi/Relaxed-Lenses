@@ -1,31 +1,31 @@
 #include <iostream>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <time.h>
 #include <vector>
 #include <string>
 #include "lente.hpp"
-#define num_raggi 20
-#define ORD 2
+
+#define ORD 10
 #define CAMPO 400
 #define DIMENSIONE_SENSORE 10
-#define ALTEZZA_SENSORE 1000
-#define MAX_LOOP 600000
+#define ALTEZZA_SENSORE 4000
+#define MAX_LOOP 1<<9
 using namespace std;
 
 // misure in mm
 
 int main(){
 
-	vector<Lente> sistema={1.5};
+	Sistema lemielenti = Sistema({1.5,1.77,1.5},CAMPO, ALTEZZA_SENSORE, DIMENSIONE_SENSORE, ORD);
 	cout<<"...PROCESSING..."<<endl;
 	for(int i=0;i<MAX_LOOP;++i){
-		RandomUpdate(lemielenti);
-		//std::cout<<tele.Update(tele.Campo*rand()/RAND_MAX)<<std::endl;
+		/*if(i%(MAX_LOOP/10)==0)cout<<RandomUpdate(lemielenti)<<endl;
+		else*/ RandomUpdate(lemielenti);
 		}
-	cout<<"... COMPLETED!.."<<endl;
+	cout<<endl<<"... COMPLETED!.."<<endl;
 	
-	Gnuplotta(sistema);
+	Gnuplotta(lemielenti);
 	}
 	
 
