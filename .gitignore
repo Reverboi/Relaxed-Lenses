@@ -3,5 +3,5 @@ dati
 *.x
 *.gp
 scores.cpp
-scores.dat
+*.dat
 .vscode
