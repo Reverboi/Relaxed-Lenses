@@ -122,11 +122,95 @@ double RandomUpdate(Sistema& D){
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
 			D.lente[i].Sup.Q[j]  += (Score(fx,x)-Score(bx,x))*e1;
+			fx.lente[i].Sup.Q[j] = sfx;
+			bx.lente[i].Sup.Q[j] = sbx;
+			}
+		}
+	return Score(D,x);
+	}
+
+double GlobalUpdate(Sistema& D){
+	double sfx,sbx;
+	Sistema fx = D;
+	Sistema bx = D;
+	for(int i=0;i<D.lente.size();i++){
+		
+		for(int j=1;j<D.lente[i].Inf.Q.size();j++){
+			sfx=fx.lente[i].Inf.Q[j];
+			sbx=bx.lente[i].Inf.Q[j];
+			fx.lente[i].Inf.Q[j] += e2;
+			bx.lente[i].Inf.Q[j] -= e2;
+			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			fx.lente[i].Inf.Q[j] = sfx;
+			bx.lente[i].Inf.Q[j] = sbx;
+			}
+
+		for(int j=1;j<D.lente[i].Sup.Q.size();j++){
+			sfx=fx.lente[i].Sup.Q[j];
+			sbx=bx.lente[i].Sup.Q[j];
+			fx.lente[i].Sup.Q[j] += e2;
+			bx.lente[i].Sup.Q[j] -= e2;
+			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
 		}
-	return Score(D,x);
+	return GScore(D);
+	}
+/*
+double GlobalUpdate(Sistema& D, int j){
+	if (j<1) return 0.0;
+	double sfx,sbx;
+	Sistema fx = D;
+	Sistema bx = D;
+	for(int i=0;i<D.lente.size();i++){
+
+		if(j<D.lente[i].Inf.Q.size()){
+			sfx=fx.lente[i].Inf.Q[j];
+			sbx=bx.lente[i].Inf.Q[j];
+			fx.lente[i].Inf.Q[j] += e2;
+			bx.lente[i].Inf.Q[j] -= e2;
+			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			fx.lente[i].Inf.Q[j] = sfx;
+			bx.lente[i].Inf.Q[j] = sbx;
+			}
+
+		if(j<D.lente[i].Sup.Q.size()){
+			sfx=fx.lente[i].Sup.Q[j];
+			sbx=bx.lente[i].Sup.Q[j];
+			fx.lente[i].Sup.Q[j] += e2;
+			bx.lente[i].Sup.Q[j] -= e2;
+			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			fx.lente[i].Sup.Q[j]=sfx;
+			bx.lente[i].Sup.Q[j]=sbx;
+			}
+		}
+	return GScore(D);
+	}
+*/
+	
+double GlobalUpdate(Sistema& D, int len, int ord){
+	if ((len<0)||(len>=D.lente.size())) return 0.0;
+	if ((ord<1)||(ord>=D.lente[len].Inf.Q.size())||(ord>=D.lente[len].Sup.Q.size())) return 0.0;
+	Sistema d[3]={Sistema(D),Sistema(D),Sistema(D)};
+	Sistema u[3]={Sistema(D),Sistema(D),Sistema(D)};
+	double scr[5];
+	scr[0]=GScore(d[0]);
+	double eps=1.0;
+	while(eps>=e){
+		int M=0;
+		d[1].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] + eps;
+		d[2].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] - eps;
+		d[3].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] + eps;
+		d[4].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] - eps;
+		for(int i=0;i<5;i++) scr[i]=GScore(d[i]);
+		for(int i=1;i<5;i++) if (scr[i]>scr[M]) M=i;
+		std::cout<<M<<std::endl;
+		if(M==0) eps=eps/2;
+		else d[0]=Sistema(d[M]);
+		}
+	D=Sistema(d[0]);
+	return GScore(D);
 	}
 
 Raggio Sistema :: Out (Raggio I){ 
@@ -152,6 +236,16 @@ double Score(Sistema& D, const double x){
 	double dis = hit - target;
 	return -dis*dis;
 	//return 1.0/(1.0+dis*dis);
+	}
+
+double GScore(Sistema& D){
+	double res=0.0;
+	int G=16;
+	for(int i=0;i<G;i++){
+		double x=-D.Campo+i*D.Campo/G;
+		res+=Score(D,x);
+		}
+	return res/G;
 	}
 	
 void Gnuplotta(Sistema& D){
@@ -197,10 +291,10 @@ void Gnuplotta(Sistema& D){
     	}
     int pti=100;
     for(int i=1; i < pti; i++){
-    double x=-D.Campo+i*2*D.Campo/pti;
-    double t=-Score(D,x);
-    fpy<< x <<' '<< t <<' '<< log(t) <<std::endl;
-    }
+    	double x=-D.Campo+i*2*D.Campo/pti;
+    	double t=-Score(D,x);
+    	fpy<< x <<' '<< t <<' '<< log(t) <<std::endl;
+    	}
     fpy.close();
     system("gnuplot -p data.gp");
     }

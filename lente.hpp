@@ -56,5 +56,8 @@ struct Sistema{
 	};
 void Gnuplotta(Sistema&);
 double RandomUpdate(Sistema& len);
+double GlobalUpdate(Sistema& D);
+double GlobalUpdate(Sistema& D, int len, int ord);
 double Score(Sistema&, double x);
+double GScore(Sistema&);
 double Snell(double angolo, double index);
