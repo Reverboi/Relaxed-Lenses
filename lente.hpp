@@ -7,19 +7,33 @@ struct Raggio{//tutti i raggi viaggiano verso l'alto
 	};
 	
 struct Curva{
-	std::vector<double> Q; // Coefficienti di Fourier (solo coseni)
-	double R; // 1/raggio di curvatura
-	Curva (std::vector<double> q, double r, double amp) : Q{q}, Ampiezza(amp), R(r) {};
+	std::vector<double> Q; // Coefficienti di Taylor
+	Curva (std::vector<double> q, double amp, double rag) : Q{q}, Ampiezza(amp) {};
 	void Log(std::ofstream& fpt);
 	double Ampiezza;
 	Curva (double quota, double amp, int ord) : Ampiezza(amp){ //crea una retta orizzontale con ord coeff a zero
-		R=0.0;
 		if(ord<0) exit(0);
 		Q.reserve(ord+1);
 		Q.push_back(quota);
 		for(int i=0;i<ord;i++){
 			Q.push_back(0.0);
 			}
+		}
+	Curva (double quota, double amp, double rag, int ord) : Ampiezza(amp){ //crea una retta orizzontale con ord coeff a zero
+		if(ord<0) exit(0);
+		Q.reserve(ord);
+		Q.push_back(quota);
+		//std::cout<<"init"<<std::endl;
+		double c[6]={0,-1,-3,-45,-1575,-99225};
+		for(int i=1;i<ord;i++){
+			if(i<6){
+				Q.push_back(c[i]*pow(4*rag,-(i*2-1))*Ampiezza);
+				//std::cout<<Q[i]<<std::endl;
+				}
+			else
+			Q.push_back(0.0);
+			}
+		Q[0]=quota;
 		}
 	double operator()(double x) const;
 	double Angolo(double x);
@@ -52,14 +66,14 @@ struct Sistema{
 		int n = IndiciRifrazione.size();
 		lente.reserve(n);
 		for(int i = 0; i < n; i++){
-			lente.push_back( Lente(Curva(ps*(i+1)/(n+1)-25,campo,ord),Curva(ps*(i+1)/(n+1)+25,campo,ord),IndiciRifrazione[i]));
+			lente.push_back( Lente(Curva(ps*(i+1)/(n+1)-50,campo,-1000.0,ord),Curva(ps*(i+1)/(n+1)+50,campo,+1000.0,ord),IndiciRifrazione[i]));
 			}
 		}
 	};
 void Gnuplotta(Sistema&);
 double RandomUpdate(Sistema& len);
 double GlobalUpdate(Sistema& D);
-double GlobalUpdate(Sistema& D, int len, int ord);
+void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps);
 double Score(Sistema&, double x);
 double GScore(Sistema&);
 double Snell(double angolo, double index);

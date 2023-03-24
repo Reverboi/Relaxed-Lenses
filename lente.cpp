@@ -3,15 +3,14 @@
 #include <cmath>
 #include <vector>
 #include "lente.hpp"
-#define e  ldexp(1.0,-50)  // numero piccolo: 'e' sta per epsilon
+#define e  ldexp(1.0,-100)  // numero piccolo: 'e' sta per epsilon
 #define e1 ldexp(1.0,-1)   // numero piccolo: 'e' sta per epsilon
-#define e2 ldexp(1.0,-10)  // numero piccolo: 'e' sta per epsilon
+#define e2 ldexp(1.0,-20)  // numero piccolo: 'e' sta per epsilon
 #define e3 ldexp(1.0,-41)
 #define MAX_LOOP 10000
 #define PI 3.14159265359
 #define num_raggi 20
 
-const int Key[4]={1,1,2,6};
 
 double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total internal reflection
 	return asin(sin(angolo)/index);
@@ -20,12 +19,11 @@ double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total in
 double Curva :: operator()(double x) const{
 	if(Q.size()==0) return 0;
 	double result=Q[0];
-	
-	double c=x*PI/(Ampiezza*2);
+	double c=x*x/(Ampiezza);
 	for(int i=1;i<Q.size();i++){
-		result+=Q[i]*cos(Key[i]*c)/Key[i];
+		result+=Q[i]*c;
+		c*=x*x;
 		}
-	if(R!=0.0) result += sign(R)*(sqrt((1.0/(R*R)) - x*x) - sqrt((1.0/(R*R)) - Ampiezza*Ampiezza));
 	return result;
 	}
 
@@ -34,11 +32,11 @@ double Curva:: Angolo(double x){return atan(Derivata(x));}
 double Curva::Derivata(double x){
 	if(Q.size()==0) return 0;
 	double result=0.0;
-	double c=x*PI/(Ampiezza*2);
+	double c=x/(Ampiezza);
 	for(int i=1;i<Q.size();i++){
-		result -= Q[i]*sin(Key[i]*c)*PI/(Ampiezza*2);
+		result +=Q[i]*i*2*c ;
+		c*=x*x;
 		}
-	if(R!=0.0) result+=-x*sign(R)/(sqrt((1.0/(R*R)) - x*x));
 	return result;
 	}
 
@@ -84,12 +82,12 @@ void Raggio :: Log(std::ofstream& fpt){
 	
 void Curva :: Log(std::ofstream& fpt){
 	if(fpt.is_open()){
-		fpt<<Q[0]<<" + ";
+		fpt<<Q[0]<<" + (";
 		for(int i=1;i<Q.size();i++){
-			fpt<<Q[i]<<"*cos(x*"<<PI*i/(2*Ampiezza)<<")/"<<i<<" + ";
+			fpt<<Q[i]<<"*(x**"<<i*2<<") + ";
 			}
 		}
-	fpt<<"sgn("<<R<<")*(sqrt(1/("<<R*R<<") - x*x) - sqrt(1/("<<R*R<<") - "<<Ampiezza*Ampiezza<<")), ";
+	fpt<<"0)/"<<Ampiezza<<", ";
 	}
 
 void Lente :: Log(std::ofstream &fpt){
@@ -141,13 +139,6 @@ double GlobalUpdate(Sistema& D){
 	Sistema bx = D;
 	
 	for(int i=0;i<D.lente.size();i++){
-		sfx=fx.lente[i].Inf.R;
-		sbx=bx.lente[i].Inf.R;
-		fx.lente[i].Inf.R += e3;
-		bx.lente[i].Inf.R -= e3;
-		D.lente[i].Inf.R  += (GScore(fx)-GScore(bx))*e1;
-		fx.lente[i].Inf.R = sfx;
-		bx.lente[i].Inf.R = sbx;
 		for(int j=0;j<D.lente[i].Inf.Q.size();j++){
 			sfx=fx.lente[i].Inf.Q[j];
 			sbx=bx.lente[i].Inf.Q[j];
@@ -157,13 +148,6 @@ double GlobalUpdate(Sistema& D){
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
-		sfx=fx.lente[i].Sup.R;
-		sbx=bx.lente[i].Sup.R;
-		fx.lente[i].Sup.R += e3;
-		bx.lente[i].Sup.R -= e3;
-		D.lente[i].Sup.R  += (GScore(fx)-GScore(bx))*e1;
-		fx.lente[i].Sup.R = sfx;
-		bx.lente[i].Sup.R = sbx;
 		for(int j=0;j<D.lente[i].Sup.Q.size();j++){
 			sfx=fx.lente[i].Sup.Q[j];
 			sbx=bx.lente[i].Sup.Q[j];
@@ -176,20 +160,20 @@ double GlobalUpdate(Sistema& D){
 		}
 	return GScore(D);
 	}
-/*
-double GlobalUpdate(Sistema& D, int j){
-	if (j<1) return 0.0;
+
+void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
+	if (j<0) return;
+	if (i<0) return;
 	double sfx,sbx;
 	Sistema fx = D;
 	Sistema bx = D;
-	for(int i=0;i<D.lente.size();i++){
-
+	R = Sistema(D);
 		if(j<D.lente[i].Inf.Q.size()){
 			sfx=fx.lente[i].Inf.Q[j];
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps;
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -199,15 +183,13 @@ double GlobalUpdate(Sistema& D, int j){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps;
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
-		}
-	return GScore(D);
 	}
-*/
-	
+
+/*	
 double GlobalUpdate(Sistema& D, int len, int ord){
 	if ((len<0)||(len>=D.lente.size())) return 0.0;
 	if ((ord<1)||(ord>=D.lente[len].Inf.Q.size())||(ord>=D.lente[len].Sup.Q.size())) return 0.0;
@@ -231,7 +213,7 @@ double GlobalUpdate(Sistema& D, int len, int ord){
 	D=Sistema(d[0]);
 	return GScore(D);
 	}
-
+*/
 Raggio Sistema :: Out (Raggio I){ 
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out(I);
@@ -262,7 +244,7 @@ double GScore(Sistema& D){
 	int G=16;
 	for(int i=0;i<G;i++){
 		double x=-D.Campo+i*D.Campo/G;
-		//double x = D.Campo*cos(i*PI/(2*G));
+		//double x = D.Campo*sin(i*PI/(2*G));
 		res+=Score(D,x);
 		}
 	return res/G;
@@ -313,7 +295,7 @@ void Gnuplotta(Sistema& D){
     for(int i=1; i < pti; i++){
     	double x=-D.Campo+i*2*D.Campo/pti;
     	double t=-Score(D,x);
-    	fpy<< x <<' '<< t <<' '<< log(t) <<std::endl;
+    	fpy<< x <<' '<< sqrt(t) <<' '<< log10(sqrt(t)) <<std::endl;
     	}
     fpy.close();
     system("gnuplot -p data.gp");
