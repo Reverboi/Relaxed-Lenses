@@ -72,8 +72,10 @@ struct Sistema{
 	};
 void Gnuplotta(Sistema&);
 double RandomUpdate(Sistema& len);
-double GlobalUpdate(Sistema& D);
-void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps);
+
+void GlobalUpdate(Sistema& D,Sistema& R, double eps);	//gradiente
+void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps);//componente scelta
+
 double Score(Sistema&, double x);
 double GScore(Sistema&);
 double Snell(double angolo, double index);

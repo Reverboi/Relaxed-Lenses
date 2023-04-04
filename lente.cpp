@@ -133,18 +133,18 @@ double RandomUpdate(Sistema& D){
 	return Score(D,x);
 	}
 
-double GlobalUpdate(Sistema& D){
+void GlobalUpdate(Sistema& D, Sistema& R, double eps){
 	double sfx,sbx;
 	Sistema fx = D;
 	Sistema bx = D;
-	
+	R = Sistema(D);
 	for(int i=0;i<D.lente.size();i++){
 		for(int j=0;j<D.lente[i].Inf.Q.size();j++){
 			sfx=fx.lente[i].Inf.Q[j];
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2*(j+1));
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -153,12 +153,11 @@ double GlobalUpdate(Sistema& D){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2*(j+1));
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
 		}
-	return GScore(D);
 	}
 
 void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
@@ -173,7 +172,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps;
+			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2);
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -183,7 +182,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps;
+			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2);
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
@@ -277,14 +276,22 @@ void Gnuplotta(Sistema& D){
     */
     fpt<<("set terminal pdf\nset output 'plot.pdf'\nset nokey\n");
     fpt<<("set size ratio -1\n");
-    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
+    fpt<<"set xlabel "<<'"'<<"Punteggio globale: "<<GScore(D)<<'"'<<"\n";
+    fpt<<"unset xtics\n";
+    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [1500:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
+    
     D.Log(fpt);
     for(int i=1; i < num_raggi; i++){
     	fpt<<"'dati/"+std::to_string(i)+".dat' u 1:2 with lines";
     	if (i+1<num_raggi) fpt<<", ";
     	}
+    fpt<<"\nset xtics\n";
+    fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm) "<<'"'<<"\n";
+    fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm) "<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
-    fpt<<("plot [:][0:1] 'scores.dat' u 1:2 with lines\nplot [:][-6:0] 'scores.dat' u 1:3 with lines\n");
+    fpt<<"plot [:][0:0.2] 'scores.dat' u 1:2 with lines\n";
+    fpt<<"set ylabel "<<'"'<<"errore offset raggio (log10-scale) "<<'"'<<"\n";
+    fpt<<"plot [:][-6:0] 'scores.dat' u 1:3 with lines\n";
     fpt.close();
     std::ofstream fpy ("scores.dat");
 	if ((fpy.is_open()) == false){

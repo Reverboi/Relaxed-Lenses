@@ -6,7 +6,7 @@
 #include <string>
 #include "lente.hpp"
 
-#define EPS 0.1
+#define EPS 0.5
 #define ORD 4
 #define CAMPO 400
 #define DIMENSIONE_SENSORE 10
@@ -26,13 +26,17 @@ int main(){
 	cout.precision(7);
 	cout<<"...PROCESSING..."<<endl;
 	double eps=EPS;
+	std::ofstream fpt ("eps.dat");
+	if ((fpt.is_open()) == false){
+        printf("Error! opening file");
+        exit(1);
+        }
 	for (int h=0; h<current->lente.size(); h++){
 		for(int i=current->lente[h].Inf.Q.size()-1; i>0; i--){
-		//for(int i=1; i<current->lente[h].Inf.Q.size(); i++){
 			cout<<"doing:"<<i<<endl;
 			for(int j=0;j<=MAX_LOOP;j++){
 				GlobalUpdate(*current,*next,h,i,eps);
-			
+				fpt<<log10(eps)<<std::endl;
 				if((GScore(*next)!=GScore(*next))||(GScore(*next)<=GScore(*current))){
 					eps=eps/UP;
 					if (eps<=FINAL){
