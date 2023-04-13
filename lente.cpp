@@ -188,31 +188,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			}
 	}
 
-/*	
-double GlobalUpdate(Sistema& D, int len, int ord){
-	if ((len<0)||(len>=D.lente.size())) return 0.0;
-	if ((ord<1)||(ord>=D.lente[len].Inf.Q.size())||(ord>=D.lente[len].Sup.Q.size())) return 0.0;
-	Sistema d[3]={Sistema(D),Sistema(D),Sistema(D)};
-	Sistema u[3]={Sistema(D),Sistema(D),Sistema(D)};
-	double scr[5];
-	scr[0]=GScore(d[0]);
-	double eps=1.0;
-	while(eps>=e){
-		int M=0;
-		d[1].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] + eps;
-		d[2].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] - eps;
-		d[3].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] + eps;
-		d[4].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] - eps;
-		for(int i=0;i<5;i++) scr[i]=GScore(d[i]);
-		for(int i=1;i<5;i++) if (scr[i]>scr[M]) M=i;
-		//std::cout<<M<<std::endl;
-		if(M==0) eps=eps/2;
-		else d[0]=Sistema(d[M]);
-		}
-	D=Sistema(d[0]);
-	return GScore(D);
-	}
-*/
+
 Raggio Sistema :: Out (Raggio I){ 
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out(I);
@@ -282,7 +258,7 @@ void Gnuplotta(Sistema& D){
     
     D.Log(fpt);
     for(int i=1; i < num_raggi; i++){
-    	fpt<<"'dati/"+std::to_string(i)+".dat' u 1:2 with lines";
+    	fpt<<"'dati/"+std::to_string(i)+".dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
     	if (i+1<num_raggi) fpt<<", ";
     	}
     fpt<<"\nset xtics\n";
