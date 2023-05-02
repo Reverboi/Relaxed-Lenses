@@ -7,10 +7,10 @@
 #include "lente.hpp"
 
 #define EPS 0.5
-#define ORD 4
-#define CAMPO 400
-#define DIMENSIONE_SENSORE 10
-#define ALTEZZA_SENSORE 4000
+#define ORD 2
+#define CAMPO 35
+#define DIMENSIONE_SENSORE 0
+#define ALTEZZA_SENSORE 140
 #define MAX_LOOP 1<<12
 #define FINAL ldexp(1.0,-100)
 #define DOWN 1.2
@@ -20,19 +20,23 @@ using namespace std;
 // misure in mm
 
 int main(){
-
-	Sistema* current= new Sistema({1.5},CAMPO, ALTEZZA_SENSORE, DIMENSIONE_SENSORE, ORD);
+        vector<Lente> pino;
+        Lente telec = Lente(Curva(-10,CAMPO,ORD),Curva(10,CAMPO,ORD),1.55,1.56);
+        Lente crom = Lente(Curva(12,CAMPO,ORD),Curva(18,CAMPO,ORD),1.70,1.68);
+        pino.push_back(telec);
+        pino.push_back(crom);
+	Sistema* current= new Sistema(pino, CAMPO, ALTEZZA_SENSORE, DIMENSIONE_SENSORE);
 	Sistema* next= new Sistema(*current);
 	cout.precision(7);
 	cout<<"...PROCESSING..."<<endl;
 	double eps=EPS;
 	std::ofstream fpt ("eps.dat");
 	if ((fpt.is_open()) == false){
-        printf("Error! opening file");
-        exit(1);
+            printf("Error! opening file");
+            exit(1);
         }
-	for (int h=0; h<current->lente.size(); h++){
-		for(int i=current->lente[h].Inf.Q.size()-1; i>0; i--){
+	for (int h=0; h<current->lente.size(); h++){                   // per ogni lente nel sistema
+		for(int i=current->lente[h].Inf.Q.size()-1; i>0; i--){    // per ogni cofficiente
 			cout<<"doing:"<<i<<endl;
 			for(int j=0;j<=MAX_LOOP;j++){
 				GlobalUpdate(*current,*next,h,i,eps);
@@ -53,13 +57,7 @@ int main(){
 			}
 		}
 	Gnuplotta(*current);
-	/*
-	for(int i=0;i<lemielenti.lente.size();i++){
-		for(int j=1;j<ORD;j++){
-			GlobalUpdate(lemielenti, i, j);
-		}
-	}
-	*/
+	
 	cout<<endl<<"... COMPLETED!.."<<endl;
 	
 	

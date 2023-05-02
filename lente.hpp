@@ -13,9 +13,9 @@ struct Curva{
 	double Ampiezza;
 	Curva (double quota, double amp, int ord) : Ampiezza(amp){ //crea una retta orizzontale con ord coeff a zero
 		if(ord<0) exit(0);
-		Q.reserve(ord+1);
+		Q.reserve(ord);
 		Q.push_back(quota);
-		for(int i=0;i<ord;i++){
+		for(int i=1;i<ord;i++){
 			Q.push_back(0.0);
 			}
 		}
@@ -34,6 +34,7 @@ struct Curva{
 			Q.push_back(0.0);
 			}
 		Q[0]=quota;
+		std::cout<<Q.size()<<std::endl;
 		}
 	double operator()(double x) const;
 	double Angolo(double x);
@@ -44,12 +45,15 @@ struct Curva{
 struct Lente{
 	Curva Inf;
 	Curva Sup;
-	double N;		  // Indice di rifrazione 
-	Raggio Out (std::ofstream &fpt, const Raggio& I);
-	Raggio Out (const Raggio& I);
+	double N_d;   // Indice di rifrazione (589.2 nm)
+	double N_f;   // Indice di rifrazione (468.1 nm)
+	Raggio Out_d (std::ofstream &fpt, const Raggio& I);
+	Raggio Out_d (const Raggio& I);
+	Raggio Out_f (std::ofstream &fpt, const Raggio& I);
+	Raggio Out_f (const Raggio& I);
 	void Log(std::ofstream &fpt);
-	Lente (std::vector<double> inf, double ri, std::vector<double> sup, double rs, double n, double amp) : Inf(inf,ri,amp), Sup(sup,rs,amp), N(n) {};
-	Lente(Curva inf, Curva sup, double n): Inf(inf), Sup(sup), N(n) {};//afraid
+	Lente (std::vector<double> inf, double ri, std::vector<double> sup, double rs, double nd, double nf, double amp) : Inf(inf,ri,amp), Sup(sup,rs,amp), N_d(nd), N_f(nf) {};
+	Lente(Curva inf, Curva sup, double nd, double nf): Inf(inf), Sup(sup), N_d(nd), N_f(nf) {};//afraid
 	};
 
 struct Sistema{
@@ -58,25 +62,33 @@ struct Sistema{
 	double AltezzaSensore;
 	double DimensioneSensore;
 	double Campo; //Dimensione massima dell'oggetto inquadrato
-	Raggio Out( Raggio in);
+	Raggio Out_d (Raggio in);
+	Raggio Out_f (Raggio in);
 	void Log(std::ofstream& fpt);
-	Raggio Out(std::ofstream &fpt, Raggio in);
-	
-	Sistema(std::vector<double> IndiciRifrazione, double campo, double ps, double ds, int ord) : Sensore(ps,ds,0), AltezzaSensore(ps), DimensioneSensore(ds), Campo(campo) {
+	Raggio Out_d (std::ofstream &fpt, Raggio in);
+	Raggio Out_f (std::ofstream &fpt, Raggio in);
+        Sistema(std::vector<Lente> bingo, double campo, double ps, double ds) : Sensore (ps,ds,0), AltezzaSensore(ps), DimensioneSensore(ds), Campo(campo), lente(bingo){};
+	Sistema(std::vector<double*> IndiciRifrazione, double campo, double ps, double ds, int ord) : Sensore(ps,ds,1), AltezzaSensore(ps), DimensioneSensore(ds), Campo(campo) {
 		int n = IndiciRifrazione.size();
 		lente.reserve(n);
 		for(int i = 0; i < n; i++){
-			lente.push_back( Lente(Curva(ps*(i+1)/(n+1)-50,campo,-1000.0,ord),Curva(ps*(i+1)/(n+1)+50,campo,+1000.0,ord),IndiciRifrazione[i]));
-			}
-		}
+		    lente.push_back( 
+			  Lente(Curva(ps*(i+1)/(n+1)-50,campo,-1000000.0,ord),
+			        Curva(ps*(i+1)/(n+1)+50,campo,+1000000.0,ord),
+			        IndiciRifrazione[i][0],
+			        IndiciRifrazione[i][1])
+			  );
+		    }
+	      }
 	};
+
 void Gnuplotta(Sistema&);
-double RandomUpdate(Sistema& len);
 
 void GlobalUpdate(Sistema& D,Sistema& R, double eps);	//gradiente
 void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps);//componente scelta
 
-double Score(Sistema&, double x);
+double Score_d(Sistema&, double x);
+double Score_f(Sistema&, double x);
 double GScore(Sistema&);
 double Snell(double angolo, double index);
 int sign(double f);
