@@ -3,13 +3,13 @@
 #include <cmath>
 #include <vector>
 #include "lente.hpp"
-#define e  ldexp(1.0,-100)  // numero piccolo: 'e' sta per epsilon
+#define e  ldexp(1.0,-100) // numero piccolo: 'e' sta per epsilon
 #define e1 ldexp(1.0,-1)   // numero piccolo: 'e' sta per epsilon
 #define e2 ldexp(1.0,-20)  // numero piccolo: 'e' sta per epsilon
-#define e3 ldexp(1.0,-41)
+#define e3 ldexp(1.0,-50)
 #define MAX_LOOP 10000
 #define PI 3.14159265359
-#define num_raggi 20
+#define num_raggi 40
 
 
 double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total internal reflection
@@ -17,35 +17,79 @@ double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total in
 	}
 
 double Curva :: operator()(double x) const{
-	if(Q.size()==0) return 0;
-	double result=Q[0];
-	double c=x*x/(Ampiezza);
-	for(int i=1;i<Q.size();i++){
-		result+=Q[i]*c;
-		c*=x*x;
-		}
+	double result=Quota;
+        for(int i=0;i<Q.size();i++){
+	  result += Q[i]*(pow(Ampiezza,2*(i+1))-pow(x,2*(i+1)))/pow(Ampiezza,2*(i+1));
+	  }
+	if(R!=0.0) result += sign(R)*(sqrt((1.0/(R*R)) - x*x) - sqrt((1.0/(R*R)) - Ampiezza*Ampiezza));
 	return result;
 	}
 
 double Curva:: Angolo(double x){return atan(Derivata(x));}
 
 double Curva::Derivata(double x){
-	if(Q.size()==0) return 0;
 	double result=0.0;
-	double c=x/(Ampiezza);
-	for(int i=1;i<Q.size();i++){
-		result +=Q[i]*i*2*c ;
-		c*=x*x;
-		}
+	for(int i=0;i<Q.size();i++){
+	  result -= Q[i]*(i+1)*2*pow(x,i*2+1)/pow(Ampiezza,2*(i+1));
+	  }
+	if(R!=0.0) result += -x*sign(R)/(sqrt((1.0/(R*R)) - x*x));
 	return result;
 	}
 
+std::string Numline(std::string str){     // Removes all leading non-number char until it finds a number
+  std::string numStr="";
+  for (int i=0; i<str.length(); i++) {
+     if (isdigit(str[i]) || str[i] == '.' || str[i] == '-' || str[i] == 'e') {
+         numStr = str.substr(i,str.length()-i);
+         //std::cout<<numStr<<std::endl;
+         break;
+         }
+     }
+   return numStr;
+   }
+        
+
+Curva :: Curva(std::ifstream& inp){
+        std::string line;
+        std::string numline;
+        R=0.0;
+        while (std::getline(inp, line)) {  // read each line from the file
+            numline=Numline(line);
+            char* pin;
+            double num = std::strtod(numline.c_str(), &pin);
+            std::string rest;
+            switch(line[0]){
+              case 'A':
+                Ampiezza=num;
+                break;
+              case 'H':
+                Quota=num;
+                break;
+              case 'R':
+                R=1.0/num;
+                break;
+              case 'Q':
+                Quota+=num;
+                flag:
+                rest = numline.substr(pin-&(numline[0]),10000);
+                numline=Numline(rest);
+                if (numline!=""){
+                    num = std::strtod(numline.c_str(), &pin);
+                    Q.push_back(num);
+                    goto flag;
+                    }
+                break;
+              default: break;
+              }
+            }
+        }
+        
 double Curva:: Intersect(const Raggio& in){
 	if(in.A!=in.A) return NAN; //total internal reflection
 	if(in.Y>((*this)(in.X))){  // ...se il raggio è già oltre...
 		return NAN; 
 		}
-	double r=1000.0;
+	double r=1;
 	double const xx=-sin(in.A);
 	double const yy=cos(in.A);
 	double x0,y0,x1=in.X,y1=in.Y;
@@ -96,12 +140,13 @@ void Raggio :: Log(std::ofstream& fpt){
 	
 void Curva :: Log(std::ofstream& fpt){
 	if(fpt.is_open()){
-		fpt<<Q[0]<<" + (";
-		for(int i=1;i<Q.size();i++){
-			fpt<<Q[i]<<"*(x**"<<i*2<<") + ";
+		fpt<<Quota<<" + ";
+		for(int i=0;i<Q.size();i++){
+			fpt<<Q[i]<<" * ("<<Ampiezza<<"**"<<(i+1)*2<<" - x**"<<(i+1)*2<<") / "<<Ampiezza<<"**"<<(i+1)*2<<" + ";
 			}
 		}
-	fpt<<"0)/"<<Ampiezza<<", ";
+	if(R!=0.0) fpt<<"sgn("<<R<<")*(sqrt(1/("<<R*R<<") - x*x) - sqrt(1/("<<R*R<<") - "<<Ampiezza*Ampiezza<<")), ";
+	else       fpt<<"0, ";
 	}
 
 void Lente :: Log(std::ofstream &fpt){
@@ -128,7 +173,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, double eps){
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2*(j+1));
+			R.lente[i].Inf.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2*(j+1));
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -137,7 +182,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, double eps){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2*(j+1));
+			R.lente[i].Sup.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2*(j+1));
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
@@ -156,7 +201,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			R.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2);
+			R.lente[i].Inf.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2);
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -166,7 +211,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			R.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*eps/(2*e2);
+			R.lente[i].Sup.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2);
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
@@ -180,7 +225,7 @@ Raggio Sistema :: Out_d (Raggio I){
 	return I;
 	}
 
-Raggio Sistema :: Out_d (std::ofstream& fpt,Raggio I){ //log version
+Raggio Sistema :: Out_d (std::ofstream& fpt,Raggio I){ // log version
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out_d(fpt,I);
 		}
@@ -194,61 +239,62 @@ Raggio Sistema :: Out_f (Raggio I){
 	return I;
 	}
 
-Raggio Sistema :: Out_f (std::ofstream& fpt,Raggio I){ //log version
+Raggio Sistema :: Out_f (std::ofstream& fpt,Raggio I){ // log version
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out_f(fpt,I);
 		}
 	return I;
 	}
 	
-double Score_d(Sistema& D, const double x){
-	Raggio in = Raggio(x,-D.AltezzaSensore/2,0);
-	double target = - x * D.DimensioneSensore / D.Campo;
-	Raggio out = D.Out_d(in);
-	double hit = out.X+(out.Y-D.AltezzaSensore)*tan(out.A);
-	if (hit!=hit) return -(D.Campo+D.DimensioneSensore)*(D.Campo+D.DimensioneSensore);
+double Sistema :: Score_d(const double x){
+	Raggio in = Raggio(x,-AltezzaSensore/2,0);
+	double target = - x * DimensioneSensore / Campo;
+	Raggio out = Out_d(in);
+	double hit = out.X+(out.Y-AltezzaSensore)*tan(out.A);
+	if (hit!=hit) return (Campo+DimensioneSensore);
 	return hit - target;
-	//return -dis*dis;
-	//return 1.0/(1.0+dis*dis);
 	}
 
-double Score_f(Sistema& D, const double x){
-	Raggio in = Raggio(x,-D.AltezzaSensore/2,0);
-	double target = - x * D.DimensioneSensore / D.Campo;
-	Raggio out = D.Out_f(in);
-	double hit = out.X+(out.Y-D.AltezzaSensore)*tan(out.A);
-	if (hit!=hit) return -(D.Campo+D.DimensioneSensore)*(D.Campo+D.DimensioneSensore);
+double Sistema :: Score_f(const double x){
+	Raggio in = Raggio(x,-AltezzaSensore/2,0);
+	double target = - x * DimensioneSensore / Campo;
+	Raggio out = Out_f(in);
+	double hit = out.X+(out.Y-AltezzaSensore)*tan(out.A);
+	if (hit!=hit) return (Campo + DimensioneSensore);   // don't ask
 	return hit - target;
-	//return -dis*dis;
-	//return 1.0/(1.0+dis*dis);
 	}
 
-double GScore(Sistema& D){
+double Sistema :: GScore(){
 	double res=0.0;
-	int G=16;
+	int G=128;
 	for(int i=0;i<G;i++){
-		double x=-D.Campo+i*D.Campo/G;
-		double s1=Score_d(D,x);
-		double s2=Score_f(D,x);
-		res-=s1*s1+s2*s2;
+		double  x = -Campo + i * Campo/G;
+		double s1 = Score_d(x);
+		double s2 = Score_f(x);
+		res -= s1*s1 + s2*s2;
 		}
-	return res/(2*G);
+	return res/(2*G*DimensioneSensore*DimensioneSensore); // normalizzato sulla dimensione del sensore
 	}
 	
-void Gnuplotta(Sistema& D){
+void Sistema :: Gnuplotta(std::string destination){
+
+        std::ofstream sens ("dati/sensore.dat");
+        sens<<-DimensioneSensore<<" "<<AltezzaSensore<<"\n";
+        sens<< DimensioneSensore<<" "<<AltezzaSensore;
+        sens.close();
+        
 	for(int i=1; i < num_raggi; i++){		//creo i file per i singoli raggi
 		std::ofstream fpt ("dati/"+std::to_string(i)+"_d.dat");   //d
 		if ((fpt.is_open()) == false){
         	printf("Error! opening file");
         	exit(1);
     		}
-   		Raggio ray = Raggio(fpt,-D.Campo+i*2*D.Campo/num_raggi,-D.AltezzaSensore/2,0.0);
-		for(int i=0;i<D.lente.size();i++){
-			Raggio a = D.lente[i].Out_d(fpt,ray);
+   		Raggio ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
+		for(int i=0;i<lente.size();i++){
+			Raggio a = lente[i].Out_d(fpt,ray);
 			ray=a;
 			}
-		double x=D.Sensore.Intersect(ray);
-		ray= Raggio(fpt,x,D.Sensore(x),0);
+		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<<AltezzaSensore;
 		fpt.close();
 		
 		fpt = std::ofstream("dati/"+std::to_string(i)+"_f.dat");     //f
@@ -256,50 +302,50 @@ void Gnuplotta(Sistema& D){
         	printf("Error! opening file");
         	exit(1);
     		}
-   		ray = Raggio(fpt,-D.Campo+i*2*D.Campo/num_raggi,-D.AltezzaSensore/2,0.0);
-		for(int i=0;i<D.lente.size();i++){
-			Raggio a = D.lente[i].Out_f(fpt,ray);
+   		ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
+		for(int i=0;i<lente.size();i++){
+			Raggio a = lente[i].Out_f(fpt,ray);
 			ray=a;
 			}
-		x=D.Sensore.Intersect(ray);
-		ray= Raggio(fpt,x,D.Sensore(x),0);
+		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<< AltezzaSensore;
 		fpt.close();
 		}
 	std::ofstream fpt ("data.gp");
 	if ((fpt.is_open()) == false){
         printf("Error! opening file");
         exit(1);
-    	}/*
-    fpt<<("set terminal pdf\nset output 'errors.pdf'\nset nokey\nplot 'scores.dat' u 1:2 with lines\nset output 'errlogs.pdf'\nplot 'scores.dat' u 1:3 with lines\n");
-    fpt<<("set size ratio -1\nset output 'plot.pdf'\n");
-    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
-    */
-    fpt<<("set terminal pdf\nset output 'plot.pdf'\nset nokey\n");
+    	}
+    	
+    fpt<<("set terminal pdf\nset output '"+destination+"'\nset nokey\n");
     fpt<<("set size ratio -1\n");
-    fpt<<"set xlabel "<<'"'<<"Punteggio globale: "<<GScore(D)<<'"'<<"\n";
+    fpt<<"set xlabel "<<'"'<<"Punteggio globale: "<<GScore()<<'"'<<"\n";
     fpt<<"unset xtics\n";
-    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [-20:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
     
-    D.Log(fpt);
+    fpt<<"plot [-"<<Campo<<":"<<Campo<<"] [-20:"<<AltezzaSensore+20<<"] ";
+    Log(fpt);
     for(int i=1; i < num_raggi; i++){
-    	fpt<<"'dati/"+std::to_string(i)+"_d.dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
-    	if (i+1<num_raggi) fpt<<", ";
+    	fpt<<"'dati/"<<i<<"_d.dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
+    	/*if (i+1<num_raggi)*/ fpt<<", ";
     	}
-    fpt<<("\nplot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [-20:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
+    fpt<<" 'dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+     fpt<<"\nplot [-"<<Campo<<":"<<Campo<<"] [-20:"<<AltezzaSensore+20<<"] ";
     
-    D.Log(fpt);
+    Log(fpt);
     for(int i=1; i < num_raggi; i++){
-    	fpt<<"'dati/"+std::to_string(i)+"_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
-    	if (i+1<num_raggi) fpt<<", ";
+    	fpt<<"'dati/"<<i<<"_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
+    	/*if (i+1<num_raggi)*/ fpt<<", ";
     	}
+    fpt<<" 'dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+    
     fpt<<"\nset xtics\n";
-    fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm) "<<'"'<<"\n";
-    fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm) "<<'"'<<"\n";
+    fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm)"<<'"'<<"\n";
+    fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm)"<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
     fpt<<"plot [:][:] 'scores.dat' u 1:2 with lines lt rgb"<<'"'<<"orange"<<'"'
     <<", 'scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"'<<"\n";
     fpt<<"set ylabel "<<'"'<<"errore offset raggio (log10-scale) "<<'"'<<"\n";
     fpt<<"plot [:][:] 'scores.dat' u 1:4 with lines\n";
+    //fpt<<"plot [:][:] 'eps.dat' with lines\n";
     fpt.close();
     std::ofstream fpy ("scores.dat");
     
@@ -309,9 +355,9 @@ void Gnuplotta(Sistema& D){
     }
     int pti=100;
     for(int i=1; i < pti; i++){
-    	double x=-D.Campo+i*2*D.Campo/pti;
-    	double t=Score_d(D,x);
-    	double s=Score_f(D,x);
+    	double x=-Campo+i*2*Campo/pti;
+    	double t=Score_d(x);
+    	double s=Score_f(x);
     	fpy<< x <<' '<< t <<' '<< s <<' '<< log10(sqrt(t*t+s*s)) <<std::endl;
     	}
     fpy.close();
@@ -323,3 +369,29 @@ int sign(double f){
 	if(f==0.0) return 0;
 	else return -1;
 	}
+	
+void Sistema :: OttimizzaSensore() {    
+    double fx,bx;
+    double cx = GScore();
+    double crawl = AltezzaSensore/2.0; 
+    int i=0;
+    for(;(i<64)&&(crawl*crawl >= e3);i++){
+      AltezzaSensore += crawl;
+      fx = GScore();
+      if ( fx > cx ) {
+          cx=fx; 
+          continue;
+          }
+      AltezzaSensore -= 2 * crawl;
+      bx = GScore();
+      if ( bx > cx ) {
+          cx=bx;
+          crawl = -crawl;
+          continue;
+          }
+      else{
+          AltezzaSensore += crawl;
+          crawl = crawl / 2.0;
+          }
+      }
+    }
