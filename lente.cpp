@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include "lente.hpp"
 #define e  ldexp(1.0,-100) // numero piccolo: 'e' sta per epsilon
 #define e1 ldexp(1.0,-1)   // numero piccolo: 'e' sta per epsilon
@@ -9,29 +10,44 @@
 #define e3 ldexp(1.0,-50)
 #define MAX_LOOP 10000
 #define PI 3.14159265359
+#define RISOLUZIONE_G_SCORE 64
 #define num_raggi 40
 
+Lente :: ~Lente(){
+        delete Inf;
+        delete Sup;
+        }
 
 double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total internal reflection
 	return asin(sin(angolo)/index);
 	}
 
-double Curva :: operator()(double x) const{
+double Arco :: operator()(double x) const{
+	double result=Quota;
+	if(R!=0.0) result += sign(R)*(sqrt((1.0/(R*R)) - x*x) - sqrt((1.0/(R*R)) - Ampiezza*Ampiezza));
+	return result;
+	}
+	
+double Polinomio :: operator()(double x) const{
 	double result=Quota;
         for(int i=0;i<Q.size();i++){
 	  result += Q[i]*(pow(Ampiezza,2*(i+1))-pow(x,2*(i+1)))/pow(Ampiezza,2*(i+1));
 	  }
-	if(R!=0.0) result += sign(R)*(sqrt((1.0/(R*R)) - x*x) - sqrt((1.0/(R*R)) - Ampiezza*Ampiezza));
 	return result;
 	}
 
-double Curva:: Angolo(double x){return atan(Derivata(x));}
+double Curva :: Angolo( double x ){ return atan( Derivata( x )); }
 
-double Curva::Derivata(double x){
+double Polinomio :: Derivata( double x ){
 	double result=0.0;
 	for(int i=0;i<Q.size();i++){
-	  result -= Q[i]*(i+1)*2*pow(x,i*2+1)/pow(Ampiezza,2*(i+1));
+	  result -= Q[i] *( i + 1 )* 2 * pow( x, i * 2 + 1 ) / pow( Ampiezza, 2 *( i + 1 ));
 	  }
+	return result;
+	}
+
+double Arco :: Derivata( double x ){
+	double result=0.0;
 	if(R!=0.0) result += -x*sign(R)/(sqrt((1.0/(R*R)) - x*x));
 	return result;
 	}
@@ -41,7 +57,6 @@ std::string Numline(std::string str){     // Removes all leading non-number char
   for (int i=0; i<str.length(); i++) {
      if (isdigit(str[i]) || str[i] == '.' || str[i] == '-' || str[i] == 'e') {
          numStr = str.substr(i,str.length()-i);
-         //std::cout<<numStr<<std::endl;
          break;
          }
      }
@@ -49,10 +64,9 @@ std::string Numline(std::string str){     // Removes all leading non-number char
    }
         
 
-Curva :: Curva(std::ifstream& inp){
+Polinomio :: Polinomio( std::ifstream& inp ){
         std::string line;
         std::string numline;
-        R=0.0;
         while (std::getline(inp, line)) {  // read each line from the file
             numline=Numline(line);
             char* pin;
@@ -64,9 +78,6 @@ Curva :: Curva(std::ifstream& inp){
                 break;
               case 'H':
                 Quota=num;
-                break;
-              case 'R':
-                R=1.0/num;
                 break;
               case 'Q':
                 Quota+=num;
@@ -107,53 +118,58 @@ double Curva:: Intersect(const Raggio& in){
 	}
 	
 Raggio Lente :: Out_d (std::ofstream& fpt, const Raggio& I ){ //log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(fpt, x, Inf(x), Snell(I.A-Inf.Angolo(x),N_d)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(fpt,x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N_d)+Sup.Angolo(x));
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(fpt, x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_d)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(fpt, x, (*Sup)(x), Snell(M.A-Sup->Angolo(x), 1.0/N_d)+Sup->Angolo(x));
 	}
 
 Raggio Lente :: Out_d (const Raggio& I){ //non log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(x, Inf(x), Snell(I.A-Inf.Angolo(x),N_d)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N_d)+Sup.Angolo(x));
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_d)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_d)+Sup->Angolo(x));
 	}
 
 Raggio Lente :: Out_f (std::ofstream& fpt, const Raggio& I){ //log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(fpt, x, Inf(x), Snell(I.A-Inf.Angolo(x),N_f)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(fpt,x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N_f)+Sup.Angolo(x));
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(fpt, x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_f)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(fpt,x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_f)+Sup->Angolo(x));
 	}
 
 Raggio Lente :: Out_f (const Raggio& I){ //non log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(x, Inf(x), Snell(I.A-Inf.Angolo(x),N_f)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N_f)+Sup.Angolo(x));
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_f)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_f)+Sup->Angolo(x));
 	}
 	
 void Raggio :: Log(std::ofstream& fpt){
 	if(fpt.is_open()) fpt<<X<<" "<<Y<<"\n";
 	}
 	
-void Curva :: Log(std::ofstream& fpt){
-	if(fpt.is_open()){
-		fpt<<Quota<<" + ";
-		for(int i=0;i<Q.size();i++){
-			fpt<<Q[i]<<" * ("<<Ampiezza<<"**"<<(i+1)*2<<" - x**"<<(i+1)*2<<") / "<<Ampiezza<<"**"<<(i+1)*2<<" + ";
-			}
-		}
+void Arco :: Log( std::ofstream& fpt ){
+    if( fpt.is_open() ){
+        fpt << Quota << " + ";
 	if(R!=0.0) fpt<<"sgn("<<R<<")*(sqrt(1/("<<R*R<<") - x*x) - sqrt(1/("<<R*R<<") - "<<Ampiezza*Ampiezza<<")), ";
 	else       fpt<<"0, ";
+        }
+    }
+
+void Polinomio :: Log(std::ofstream& fpt){
+    if( fpt.is_open() ){
+	fpt << Quota;
+	for(int i=0;i<Q.size();i++){
+	    fpt<<" + "<<Q[i]<<" * ("<<Ampiezza<<"**"<<(i+1)*2<<" - x**"<<(i+1)*2<<") / "<<Ampiezza<<"**"<<(i+1)*2;
+	    }
+	}
+	fpt<<", ";
 	}
 
 void Lente :: Log(std::ofstream &fpt){
-	Inf.Log(fpt);
-	//fpt<<" title ' ', ";
-	Sup.Log(fpt);
-	//fpt<<" title ' ', ";
+	Inf->Log(fpt);
+	Sup->Log(fpt);
 	}
 
 void Sistema :: Log(std::ofstream &fpt){
@@ -161,7 +177,7 @@ void Sistema :: Log(std::ofstream &fpt){
 		lente[i].Log(fpt);
 		}
 	}
-
+/*
 void GlobalUpdate(Sistema& D, Sistema& R, double eps){
 	double sfx,sbx;
 	Sistema fx = D;
@@ -217,7 +233,7 @@ void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
 			}
 	}
 
-
+*/
 Raggio Sistema :: Out_d (Raggio I){ 
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out_d(I);
@@ -266,7 +282,7 @@ double Sistema :: Score_f(const double x){
 
 double Sistema :: GScore(){
 	double res=0.0;
-	int G=128;
+	int G=RISOLUZIONE_G_SCORE;
 	for(int i=0;i<G;i++){
 		double  x = -Campo + i * Campo/G;
 		double s1 = Score_d(x);
@@ -395,3 +411,12 @@ void Sistema :: OttimizzaSensore() {
           }
       }
     }
+
+Sistema :: Sistema(const Sistema& source) : AltezzaSensore(source.AltezzaSensore), DimensioneSensore(source.DimensioneSensore), Campo(source.Campo){
+    for(Lente s : source.lente) lente.push_back(Lente(s)); 
+    }
+
+void Sistema :: InserisciLente(const Lente& q){
+    lente.push_back(q);
+    std::sort(lente.begin(),lente.end(),[](const Lente& a, const Lente& b){return a.Inf->Quota < b.Inf->Quota;});
+}

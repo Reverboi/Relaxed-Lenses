@@ -32,14 +32,14 @@ int main(){
             exit(1);
         }
 	Sistema* current= new Sistema( ALTEZZA_SENSORE, DIMENSIONE_SENSORE,  CAMPO );
-	Lente gian = Lente(Curva(inf),Curva(sup),1.4756,1.47555);
+	Lente gian = Lente( new Polinomio(inf), new Polinomio(sup),1.4756,1.47555);   // Penso che come desing pattern sarebbe da fare che la lente ha cotruttore pubblico mentre la curva/polinomio
 	//Lente gian = Lente(Curva(inf),Curva(sup),1.47,1.47);
 	inf.close();
         sup.close();
 	current->lente.push_back(gian);
 	Sistema* next= new Sistema(*current);
 	cout.precision(7);
-	current->OttimizzaSensore();
+	//current->OttimizzaSensore();
 	/*
 	cout<<"...PROCESSING..."<<endl;
 	double eps=EPS;
