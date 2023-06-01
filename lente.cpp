@@ -2,52 +2,105 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include "lente.hpp"
-#define e  ldexp(1.0,-50)  // numero piccolo: 'e' sta per epsilon
+#define e  ldexp(1.0,-100) // numero piccolo: 'e' sta per epsilon
 #define e1 ldexp(1.0,-1)   // numero piccolo: 'e' sta per epsilon
-#define e2 ldexp(1.0,-10)  // numero piccolo: 'e' sta per epsilon
-#define e3 ldexp(1.0,-41)
+#define e2 ldexp(1.0,-20)  // numero piccolo: 'e' sta per epsilon
+#define e3 ldexp(1.0,-50)
 #define MAX_LOOP 10000
 #define PI 3.14159265359
-#define num_raggi 20
+#define RISOLUZIONE_G_SCORE 64
+#define num_raggi 40
 
-const int Key[4]={1,1,2,6};
+Lente :: ~Lente(){
+        delete Inf;
+        delete Sup;
+        }
 
 double Snell(double angolo, double index){ //ritorna +- NAN se siamo in total internal reflection
 	return asin(sin(angolo)/index);
 	}
 
-double Curva :: operator()(double x) const{
-	if(Q.size()==0) return 0;
-	double result=Q[0];
-	
-	double c=x*PI/(Ampiezza*2);
-	for(int i=1;i<Q.size();i++){
-		result+=Q[i]*cos(Key[i]*c)/Key[i];
-		}
+double Arco :: operator()(double x) const{
+	double result=Quota;
 	if(R!=0.0) result += sign(R)*(sqrt((1.0/(R*R)) - x*x) - sqrt((1.0/(R*R)) - Ampiezza*Ampiezza));
 	return result;
 	}
-
-double Curva:: Angolo(double x){return atan(Derivata(x));}
-
-double Curva::Derivata(double x){
-	if(Q.size()==0) return 0;
-	double result=0.0;
-	double c=x*PI/(Ampiezza*2);
-	for(int i=1;i<Q.size();i++){
-		result -= Q[i]*sin(Key[i]*c)*PI/(Ampiezza*2);
-		}
-	if(R!=0.0) result+=-x*sign(R)/(sqrt((1.0/(R*R)) - x*x));
+	
+double Polinomio :: operator()(double x) const{
+	double result=Quota;
+        for(int i=0;i<Q.size();i++){
+	  result += Q[i]*(pow(Ampiezza,2*(i+1))-pow(x,2*(i+1)))/pow(Ampiezza,2*(i+1));
+	  }
 	return result;
 	}
 
+double Curva :: Angolo( double x ){ return atan( Derivata( x )); }
+
+double Polinomio :: Derivata( double x ){
+	double result=0.0;
+	for(int i=0;i<Q.size();i++){
+	  result -= Q[i] *( i + 1 )* 2 * pow( x, i * 2 + 1 ) / pow( Ampiezza, 2 *( i + 1 ));
+	  }
+	return result;
+	}
+
+double Arco :: Derivata( double x ){
+	double result=0.0;
+	if(R!=0.0) result += -x*sign(R)/(sqrt((1.0/(R*R)) - x*x));
+	return result;
+	}
+
+std::string Numline(std::string str){     // Removes all leading non-number char until it finds a number
+  std::string numStr="";
+  for (int i=0; i<str.length(); i++) {
+     if (isdigit(str[i]) || str[i] == '.' || str[i] == '-' || str[i] == 'e') {
+         numStr = str.substr(i,str.length()-i);
+         break;
+         }
+     }
+   return numStr;
+   }
+        
+
+Polinomio :: Polinomio( std::ifstream& inp ){
+        std::string line;
+        std::string numline;
+        while (std::getline(inp, line)) {  // read each line from the file
+            numline=Numline(line);
+            char* pin;
+            double num = std::strtod(numline.c_str(), &pin);
+            std::string rest;
+            switch(line[0]){
+              case 'A':
+                Ampiezza=num;
+                break;
+              case 'H':
+                Quota=num;
+                break;
+              case 'Q':
+                Quota+=num;
+                flag:
+                rest = numline.substr(pin-&(numline[0]),10000);
+                numline=Numline(rest);
+                if (numline!=""){
+                    num = std::strtod(numline.c_str(), &pin);
+                    Q.push_back(num);
+                    goto flag;
+                    }
+                break;
+              default: break;
+              }
+            }
+        }
+        
 double Curva:: Intersect(const Raggio& in){
 	if(in.A!=in.A) return NAN; //total internal reflection
 	if(in.Y>((*this)(in.X))){  // ...se il raggio è già oltre...
 		return NAN; 
 		}
-	double r=1000.0;
+	double r=1;
 	double const xx=-sin(in.A);
 	double const yy=cos(in.A);
 	double x0,y0,x1=in.X,y1=in.Y;
@@ -64,39 +117,59 @@ double Curva:: Intersect(const Raggio& in){
 	return x1;
 	}
 	
-Raggio Lente :: Out (std::ofstream& fpt, const Raggio& I){ //log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(fpt, x, Inf(x), Snell(I.A-Inf.Angolo(x),N)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(fpt,x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N)+Sup.Angolo(x));
+Raggio Lente :: Out_d (std::ofstream& fpt, const Raggio& I ){ //log version
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(fpt, x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_d)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(fpt, x, (*Sup)(x), Snell(M.A-Sup->Angolo(x), 1.0/N_d)+Sup->Angolo(x));
 	}
 
-Raggio Lente :: Out (const Raggio& I){ //non log version
-	double x=Inf.Intersect(I);
-	Raggio M = Raggio(x, Inf(x), Snell(I.A-Inf.Angolo(x),N)+Inf.Angolo(x));
-	x=Sup.Intersect(M);
-	return Raggio(x,Sup(x),Snell(M.A-Sup.Angolo(x),1.0/N)+Sup.Angolo(x));
+Raggio Lente :: Out_d (const Raggio& I){ //non log version
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_d)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_d)+Sup->Angolo(x));
 	}
 
+Raggio Lente :: Out_f (std::ofstream& fpt, const Raggio& I){ //log version
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(fpt, x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_f)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(fpt,x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_f)+Sup->Angolo(x));
+	}
+
+Raggio Lente :: Out_f (const Raggio& I){ //non log version
+	double x=Inf->Intersect(I);
+	Raggio M = Raggio(x, (*Inf)(x), Snell(I.A-Inf->Angolo(x),N_f)+Inf->Angolo(x));
+	x=Sup->Intersect(M);
+	return Raggio(x, (*Sup)(x),Snell(M.A-Sup->Angolo(x),1.0/N_f)+Sup->Angolo(x));
+	}
+	
 void Raggio :: Log(std::ofstream& fpt){
 	if(fpt.is_open()) fpt<<X<<" "<<Y<<"\n";
 	}
 	
-void Curva :: Log(std::ofstream& fpt){
-	if(fpt.is_open()){
-		fpt<<Q[0]<<" + ";
-		for(int i=1;i<Q.size();i++){
-			fpt<<Q[i]<<"*cos(x*"<<PI*i/(2*Ampiezza)<<")/"<<i<<" + ";
-			}
-		}
-	fpt<<"sgn("<<R<<")*(sqrt(1/("<<R*R<<") - x*x) - sqrt(1/("<<R*R<<") - "<<Ampiezza*Ampiezza<<")), ";
+void Arco :: Log( std::ofstream& fpt ){
+    if( fpt.is_open() ){
+        fpt << Quota << " + ";
+	if(R!=0.0) fpt<<"sgn("<<R<<")*(sqrt(1/("<<R*R<<") - x*x) - sqrt(1/("<<R*R<<") - "<<Ampiezza*Ampiezza<<")), ";
+	else       fpt<<"0, ";
+        }
+    }
+
+void Polinomio :: Log(std::ofstream& fpt){
+    if( fpt.is_open() ){
+	fpt << Quota;
+	for(int i=0;i<Q.size();i++){
+	    fpt<<" + "<<Q[i]<<" * ("<<Ampiezza<<"**"<<(i+1)*2<<" - x**"<<(i+1)*2<<") / "<<Ampiezza<<"**"<<(i+1)*2;
+	    }
+	}
+	fpt<<", ";
 	}
 
 void Lente :: Log(std::ofstream &fpt){
-	Inf.Log(fpt);
-	//fpt<<" title ' ', ";
-	Sup.Log(fpt);
-	//fpt<<" title ' ', ";
+	Inf->Log(fpt);
+	Sup->Log(fpt);
 	}
 
 void Sistema :: Log(std::ofstream &fpt){
@@ -104,92 +177,47 @@ void Sistema :: Log(std::ofstream &fpt){
 		lente[i].Log(fpt);
 		}
 	}
-
-double RandomUpdate(Sistema& D){
-	const double x = rand()*D.Campo/RAND_MAX;
+/*
+void GlobalUpdate(Sistema& D, Sistema& R, double eps){
 	double sfx,sbx;
 	Sistema fx = D;
 	Sistema bx = D;
+	R = Sistema(D);
 	for(int i=0;i<D.lente.size();i++){
-		
-		for(int j=1;j<D.lente[i].Inf.Q.size();j++){
-			sfx=fx.lente[i].Inf.Q[j];
-			sbx=bx.lente[i].Inf.Q[j];
-			fx.lente[i].Inf.Q[j] += e2;
-			bx.lente[i].Inf.Q[j] -= e2;
-			D.lente[i].Inf.Q[j]  += (Score(fx,x)-Score(bx,x))*e1;
-			fx.lente[i].Inf.Q[j] = sfx;
-			bx.lente[i].Inf.Q[j] = sbx;
-			}
-
-		for(int j=1;j<D.lente[i].Sup.Q.size();j++){
-			sfx=fx.lente[i].Sup.Q[j];
-			sbx=bx.lente[i].Sup.Q[j];
-			fx.lente[i].Sup.Q[j] += e2;
-			bx.lente[i].Sup.Q[j] -= e2;
-			D.lente[i].Sup.Q[j]  += (Score(fx,x)-Score(bx,x))*e1;
-			fx.lente[i].Sup.Q[j] = sfx;
-			bx.lente[i].Sup.Q[j] = sbx;
-			}
-		}
-	return Score(D,x);
-	}
-
-double GlobalUpdate(Sistema& D){
-	double sfx,sbx;
-	Sistema fx = D;
-	Sistema bx = D;
-	
-	for(int i=0;i<D.lente.size();i++){
-		sfx=fx.lente[i].Inf.R;
-		sbx=bx.lente[i].Inf.R;
-		fx.lente[i].Inf.R += e3;
-		bx.lente[i].Inf.R -= e3;
-		D.lente[i].Inf.R  += (GScore(fx)-GScore(bx))*e1;
-		fx.lente[i].Inf.R = sfx;
-		bx.lente[i].Inf.R = sbx;
 		for(int j=0;j<D.lente[i].Inf.Q.size();j++){
 			sfx=fx.lente[i].Inf.Q[j];
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Inf.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2*(j+1));
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
-		sfx=fx.lente[i].Sup.R;
-		sbx=bx.lente[i].Sup.R;
-		fx.lente[i].Sup.R += e3;
-		bx.lente[i].Sup.R -= e3;
-		D.lente[i].Sup.R  += (GScore(fx)-GScore(bx))*e1;
-		fx.lente[i].Sup.R = sfx;
-		bx.lente[i].Sup.R = sbx;
 		for(int j=0;j<D.lente[i].Sup.Q.size();j++){
 			sfx=fx.lente[i].Sup.Q[j];
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Sup.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2*(j+1));
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
 		}
-	return GScore(D);
 	}
-/*
-double GlobalUpdate(Sistema& D, int j){
-	if (j<1) return 0.0;
+
+void GlobalUpdate(Sistema& D, Sistema& R, int i, int j, double eps){
+	if (j<0) return;
+	if (i<0) return;
 	double sfx,sbx;
 	Sistema fx = D;
 	Sistema bx = D;
-	for(int i=0;i<D.lente.size();i++){
-
+	R = Sistema(D);
 		if(j<D.lente[i].Inf.Q.size()){
 			sfx=fx.lente[i].Inf.Q[j];
 			sbx=bx.lente[i].Inf.Q[j];
 			fx.lente[i].Inf.Q[j] += e2;
 			bx.lente[i].Inf.Q[j] -= e2;
-			D.lente[i].Inf.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Inf.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2);
 			fx.lente[i].Inf.Q[j] = sfx;
 			bx.lente[i].Inf.Q[j] = sbx;
 			}
@@ -199,124 +227,157 @@ double GlobalUpdate(Sistema& D, int j){
 			sbx=bx.lente[i].Sup.Q[j];
 			fx.lente[i].Sup.Q[j] += e2;
 			bx.lente[i].Sup.Q[j] -= e2;
-			D.lente[i].Sup.Q[j]  += (GScore(fx)-GScore(bx))*e1;
+			R.lente[i].Sup.Q[j]  += (fx.GScore()-bx.GScore())*eps/(2*e2);
 			fx.lente[i].Sup.Q[j]=sfx;
 			bx.lente[i].Sup.Q[j]=sbx;
 			}
-		}
-	return GScore(D);
 	}
+
 */
-	
-double GlobalUpdate(Sistema& D, int len, int ord){
-	if ((len<0)||(len>=D.lente.size())) return 0.0;
-	if ((ord<1)||(ord>=D.lente[len].Inf.Q.size())||(ord>=D.lente[len].Sup.Q.size())) return 0.0;
-	Sistema d[3]={Sistema(D),Sistema(D),Sistema(D)};
-	Sistema u[3]={Sistema(D),Sistema(D),Sistema(D)};
-	double scr[5];
-	scr[0]=GScore(d[0]);
-	double eps=1.0;
-	while(eps>=e){
-		int M=0;
-		d[1].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] + eps;
-		d[2].lente[len].Inf.Q[ord] = d[0].lente[len].Inf.Q[ord] - eps;
-		d[3].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] + eps;
-		d[4].lente[len].Sup.Q[ord] = d[0].lente[len].Sup.Q[ord] - eps;
-		for(int i=0;i<5;i++) scr[i]=GScore(d[i]);
-		for(int i=1;i<5;i++) if (scr[i]>scr[M]) M=i;
-		//std::cout<<M<<std::endl;
-		if(M==0) eps=eps/2;
-		else d[0]=Sistema(d[M]);
-		}
-	D=Sistema(d[0]);
-	return GScore(D);
-	}
-
-Raggio Sistema :: Out (Raggio I){ 
+Raggio Sistema :: Out_d (Raggio I){ 
 	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out(I);
+		I = lente.at(i).Out_d(I);
 		}
 	return I;
 	}
 
-Raggio Sistema :: Out (std::ofstream& fpt,Raggio I){ //log version
+Raggio Sistema :: Out_d (std::ofstream& fpt,Raggio I){ // log version
 	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out(fpt,I);
+		I = lente.at(i).Out_d(fpt,I);
 		}
 	return I;
 	}
 	
-double Score(Sistema& D, const double x){
-	Raggio in = Raggio(x,-D.AltezzaSensore/10,0);
-	double target = - x * D.DimensioneSensore / D.Campo;
-	Raggio out = D.Out(in);
-	double hit = out.X+(out.Y-D.AltezzaSensore)*tan(out.A);
-	if (hit!=hit) return -(D.Campo+D.DimensioneSensore)*(D.Campo+D.DimensioneSensore);
-	double dis = hit - target;
-	return -dis*dis;
-	//return 1.0/(1.0+dis*dis);
+Raggio Sistema :: Out_f (Raggio I){ 
+	for(int i=0;i<lente.size();i++){
+		I = lente.at(i).Out_f(I);
+		}
+	return I;
 	}
 
-double GScore(Sistema& D){
+Raggio Sistema :: Out_f (std::ofstream& fpt,Raggio I){ // log version
+	for(int i=0;i<lente.size();i++){
+		I = lente.at(i).Out_f(fpt,I);
+		}
+	return I;
+	}
+	
+double Sistema :: Score_d(const double x){
+	Raggio in = Raggio(x,-AltezzaSensore/2,0);
+	double target = - x * DimensioneSensore / Campo;
+	Raggio out = Out_d(in);
+	double hit = out.X+(out.Y-AltezzaSensore)*tan(out.A);
+	if (hit!=hit) return (Campo+DimensioneSensore);
+	return hit - target;
+	}
+
+double Sistema :: Score_f(const double x){
+	Raggio in = Raggio(x,-AltezzaSensore/2,0);
+	double target = - x * DimensioneSensore / Campo;
+	Raggio out = Out_f(in);
+	double hit = out.X+(out.Y-AltezzaSensore)*tan(out.A);
+	if (hit!=hit) return (Campo + DimensioneSensore);   // don't ask
+	return hit - target;
+	}
+
+double Sistema :: GScore(){
 	double res=0.0;
-	int G=16;
+	int G=RISOLUZIONE_G_SCORE;
 	for(int i=0;i<G;i++){
-		double x=-D.Campo+i*D.Campo/G;
-		//double x = D.Campo*cos(i*PI/(2*G));
-		res+=Score(D,x);
+		double  x = -Campo + i * Campo/G;
+		double s1 = Score_d(x);
+		double s2 = Score_f(x);
+		res -= s1*s1 + s2*s2;
 		}
-	return res/G;
+	return res/(2*G*DimensioneSensore*DimensioneSensore); // normalizzato sulla dimensione del sensore
 	}
 	
-void Gnuplotta(Sistema& D){
+void Sistema :: Gnuplotta(std::string destination){
+
+        std::ofstream sens ("dati/sensore.dat");
+        sens<<-DimensioneSensore<<" "<<AltezzaSensore<<"\n";
+        sens<< DimensioneSensore<<" "<<AltezzaSensore;
+        sens.close();
+        
 	for(int i=1; i < num_raggi; i++){		//creo i file per i singoli raggi
-		std::ofstream fpt ("dati/"+std::to_string(i)+".dat");
+		std::ofstream fpt ("dati/"+std::to_string(i)+"_d.dat");   //d
 		if ((fpt.is_open()) == false){
         	printf("Error! opening file");
         	exit(1);
     		}
-   		Raggio ray = Raggio(fpt,-D.Campo+i*2*D.Campo/num_raggi,0,0.0);
-		for(int i=0;i<D.lente.size();i++){
-			Raggio a = D.lente[i].Out(fpt,ray);
+   		Raggio ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
+		for(int i=0;i<lente.size();i++){
+			Raggio a = lente[i].Out_d(fpt,ray);
 			ray=a;
 			}
-		double x=D.Sensore.Intersect(ray);
-		ray= Raggio(fpt,x,D.Sensore(x),0);
+		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<<AltezzaSensore;
+		fpt.close();
+		
+		fpt = std::ofstream("dati/"+std::to_string(i)+"_f.dat");     //f
+		if ((fpt.is_open()) == false){
+        	printf("Error! opening file");
+        	exit(1);
+    		}
+   		ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
+		for(int i=0;i<lente.size();i++){
+			Raggio a = lente[i].Out_f(fpt,ray);
+			ray=a;
+			}
+		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<< AltezzaSensore;
 		fpt.close();
 		}
 	std::ofstream fpt ("data.gp");
 	if ((fpt.is_open()) == false){
         printf("Error! opening file");
         exit(1);
-    	}/*
-    fpt<<("set terminal pdf\nset output 'errors.pdf'\nset nokey\nplot 'scores.dat' u 1:2 with lines\nset output 'errlogs.pdf'\nplot 'scores.dat' u 1:3 with lines\n");
-    fpt<<("set size ratio -1\nset output 'plot.pdf'\n");
-    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
-    */
-    fpt<<("set terminal pdf\nset output 'plot.pdf'\nset nokey\n");
-    fpt<<("set size ratio -1\n");
-    fpt<<("plot ["+std::to_string(-D.Campo)+":"+std::to_string(D.Campo)+"] [0:"+std::to_string(D.AltezzaSensore)+"] ").c_str();
-    D.Log(fpt);
-    for(int i=1; i < num_raggi; i++){
-    	fpt<<"'dati/"+std::to_string(i)+".dat' u 1:2 with lines";
-    	if (i+1<num_raggi) fpt<<", ";
     	}
+    	
+    fpt<<("set terminal pdf\nset output '"+destination+"'\nset nokey\n");
+    fpt<<("set size ratio -1\n");
+    fpt<<"set xlabel "<<'"'<<"Punteggio globale: "<<GScore()<<'"'<<"\n";
+    fpt<<"unset xtics\n";
+    
+    fpt<<"plot [-"<<Campo<<":"<<Campo<<"] [-20:"<<AltezzaSensore+20<<"] ";
+    Log(fpt);
+    for(int i=1; i < num_raggi; i++){
+    	fpt<<"'dati/"<<i<<"_d.dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
+    	/*if (i+1<num_raggi)*/ fpt<<", ";
+    	}
+    fpt<<" 'dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+     fpt<<"\nplot [-"<<Campo<<":"<<Campo<<"] [-20:"<<AltezzaSensore+20<<"] ";
+    
+    Log(fpt);
+    for(int i=1; i < num_raggi; i++){
+    	fpt<<"'dati/"<<i<<"_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
+    	/*if (i+1<num_raggi)*/ fpt<<", ";
+    	}
+    fpt<<" 'dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+    
+    fpt<<"\nset xtics\n";
+    fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm)"<<'"'<<"\n";
+    fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm)"<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
-    fpt<<("plot [:][0:1] 'scores.dat' u 1:2 with lines\nplot [:][-6:0] 'scores.dat' u 1:3 with lines\n");
+    fpt<<"plot [:][:] 'scores.dat' u 1:2 with lines lt rgb"<<'"'<<"orange"<<'"'
+    <<", 'scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"'<<"\n";
+    fpt<<"set ylabel "<<'"'<<"errore offset raggio (log10-scale) "<<'"'<<"\n";
+    fpt<<"plot [:][:] 'scores.dat' u 1:4 with lines\n";
+    //fpt<<"plot [:][:] 'eps.dat' with lines\n";
     fpt.close();
     std::ofstream fpy ("scores.dat");
-	if ((fpy.is_open()) == false){
-        printf("Error! opening file");
-        exit(1);
-    	}
+    
+    if ((fpy.is_open()) == false){
+    printf("Error! opening file");
+    exit(1);
+    }
     int pti=100;
     for(int i=1; i < pti; i++){
-    	double x=-D.Campo+i*2*D.Campo/pti;
-    	double t=-Score(D,x);
-    	fpy<< x <<' '<< t <<' '<< log(t) <<std::endl;
+    	double x=-Campo+i*2*Campo/pti;
+    	double t=Score_d(x);
+    	double s=Score_f(x);
+    	fpy<< x <<' '<< t <<' '<< s <<' '<< log10(sqrt(t*t+s*s)) <<std::endl;
     	}
     fpy.close();
-    system("gnuplot -p data.gp");
+    system("gnuplot -p data.gp"); // non funzionerà su windows
     }
     
 int sign(double f){
@@ -324,3 +385,38 @@ int sign(double f){
 	if(f==0.0) return 0;
 	else return -1;
 	}
+	
+void Sistema :: OttimizzaSensore() {    
+    double fx,bx;
+    double cx = GScore();
+    double crawl = AltezzaSensore/2.0; 
+    int i=0;
+    for(;(i<64)&&(crawl*crawl >= e3);i++){
+      AltezzaSensore += crawl;
+      fx = GScore();
+      if ( fx > cx ) {
+          cx=fx; 
+          continue;
+          }
+      AltezzaSensore -= 2 * crawl;
+      bx = GScore();
+      if ( bx > cx ) {
+          cx=bx;
+          crawl = -crawl;
+          continue;
+          }
+      else{
+          AltezzaSensore += crawl;
+          crawl = crawl / 2.0;
+          }
+      }
+    }
+
+Sistema :: Sistema(const Sistema& source) : AltezzaSensore(source.AltezzaSensore), DimensioneSensore(source.DimensioneSensore), Campo(source.Campo){
+    for(Lente s : source.lente) lente.push_back(Lente(s)); 
+    }
+
+void Sistema :: InserisciLente(const Lente& q){
+    lente.push_back(q);
+    std::sort(lente.begin(),lente.end(),[](const Lente& a, const Lente& b){return a.Inf->Quota < b.Inf->Quota;});
+}
