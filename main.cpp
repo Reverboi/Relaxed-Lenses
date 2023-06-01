@@ -39,7 +39,7 @@ int main(){
 	current->lente.push_back(gian);
 	Sistema* next= new Sistema(*current);
 	cout.precision(7);
-	//current->OttimizzaSensore();
+	current->OttimizzaSensore();
 	/*
 	cout<<"...PROCESSING..."<<endl;
 	double eps=EPS;

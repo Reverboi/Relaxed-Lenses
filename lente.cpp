@@ -377,7 +377,7 @@ void Sistema :: Gnuplotta(std::string destination){
     	fpy<< x <<' '<< t <<' '<< s <<' '<< log10(sqrt(t*t+s*s)) <<std::endl;
     	}
     fpy.close();
-    system("gnuplot -p data.gp");
+    system("gnuplot -p data.gp"); // non funzionerà su windows
     }
     
 int sign(double f){
