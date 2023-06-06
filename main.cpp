@@ -31,51 +31,24 @@ int main(){
             printf("Error! opening file");
             exit(1);
         }
-	Sistema* current= new Sistema( ALTEZZA_SENSORE, DIMENSIONE_SENSORE,  CAMPO );
-	Lente gian = Lente( new Polinomio(inf), new Polinomio(sup),1.4756,1.47555);   // Penso che come desing pattern sarebbe da fare che la lente ha cotruttore pubblico mentre la curva/polinomio
-	//Lente gian = Lente(Curva(inf),Curva(sup),1.47,1.47);
+	Sistema current = Sistema( ALTEZZA_SENSORE, DIMENSIONE_SENSORE,  CAMPO );
+	//Lente gian = Lente( Arco(20,30), Arco(22,30,500), 1.5, 1.5);
+	//Lente gian = Lente( Polinomio(inf), Polinomio(sup), 1.4756, 1.47555);   // Penso che come desing pattern sarebbe da fare che la lente ha cotruttore pubblico mentre la curva/polinomio
+	
+	Polinomio dw1=Polinomio(inf);
+	Polinomio up1=Polinomio(sup);
+	current.InserisciLente(Lente( dw1, up1, 1.4756, 1.47555));
+	
+	Arco dw0=Arco(-10,30);
+	Arco up0=Arco(-9,30);
+	current.InserisciLente(Lente( dw0, up0, 1.5, 1.5));
+	
+	cout<<current.lente.size()<<endl;
+	
 	inf.close();
         sup.close();
-	current->lente.push_back(gian);
-	Sistema* next= new Sistema(*current);
 	cout.precision(7);
-	current->OttimizzaSensore();
-	/*
-	cout<<"...PROCESSING..."<<endl;
-	double eps=EPS;
-	std::ofstream fpt ("eps.dat");
-	if ((fpt.is_open()) == false){
-            printf("Error! opening file");
-            exit(1);
-        }
-        
-	for (int h=0; h<current->lente.size(); h++){                   // per ogni lente nel sistema
-		for(int i=current->lente[h].Inf.Q.size()-1; i>0; i--){    // per ogni cofficiente
-			cout<<"doing:"<<i<<endl;
-			for(int j=0;j<=MAX_LOOP;j++){
-				GlobalUpdate(*current,*next,h,i,eps);
-				fpt<<eps<<" "<<log10(eps)<<std::endl;
-				if((GScore(*next)!=GScore(*next))||(GScore(*next)<=GScore(*current))){
-					eps=eps/UP;
-					if (eps<=FINAL){
-						cout<<"Final"<<endl;
-						eps=EPS/4;
-						break;
-						}
-					}
-				else{
-					*current=Sistema(*next);
-					eps=eps*DOWN;
-					}
-				}
-			}
-		}
-	fpt.close();
-	*/
-	current->Gnuplotta(DESTINATION);
+	//current.OttimizzaSensore();
+	current.Gnuplotta(DESTINATION);
 	cout<<endl<<"... COMPLETED!.."<<endl;
-	
-	
 	}
-	
-
