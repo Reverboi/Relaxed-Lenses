@@ -11,7 +11,7 @@
 
 #define EPS 0.5
 #define ORD 2
-#define CAMPO 35
+#define CAMPO 28
 #define DIMENSIONE_SENSORE 3.3
 #define DESTINATION "../plot.pdf"
 #define ALTEZZA_SENSORE 150
@@ -42,8 +42,6 @@ int main(){
 	Arco dw0=Arco(9,30);
 	Arco up0=Arco(10,30);
 	current.InserisciLente(Lente( dw0, up0, 1.5, 1.5));
-	
-	cout<<current.lente.size()<<endl;
 	
 	inf.close();
         sup.close();

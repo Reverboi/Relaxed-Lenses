@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic "CMakeFiles/Relaxed-Lenses.dir/src/Arco.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/Curva.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/Lente.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/Polinomio.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/Raggio.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/Sistema.cpp.o" "CMakeFiles/Relaxed-Lenses.dir/src/main.cpp.o" -o Relaxed-Lenses 

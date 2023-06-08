@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/RelxedLenses.dir/src/Arco.cpp.o CMakeFiles/RelxedLenses.dir/src/Curva.cpp.o CMakeFiles/RelxedLenses.dir/src/Lente.cpp.o CMakeFiles/RelxedLenses.dir/src/Polinomio.cpp.o CMakeFiles/RelxedLenses.dir/src/Raggio.cpp.o CMakeFiles/RelxedLenses.dir/src/Sistema.cpp.o CMakeFiles/RelxedLenses.dir/src/main.cpp.o -o RelxedLenses 

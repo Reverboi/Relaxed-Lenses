@@ -1,4 +1,4 @@
-dati
+dati/
 *.pdf
 *.x
 *.gp
@@ -6,3 +6,4 @@ scores.cpp
 *.dat
 .vscode
 scores.dat
+build/
