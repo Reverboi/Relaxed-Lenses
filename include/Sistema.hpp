@@ -3,6 +3,7 @@
 #define num_raggi 16
 struct Sistema{
 	std::vector<Lente> lente;
+	void OttimizzaLente(int i);
 	double AltezzaSensore;
 	double DimensioneSensore; // metà della lunghezza del sensore
 	double Campo;             // metà del campo inquadrato

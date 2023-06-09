@@ -1,6 +1,6 @@
 #include "Lente.hpp"
 
-#define PI 3.14159265359
+#define PI 3.14159265359  // Penso che non lo usi nessuno lol, sempre utile nn si sa mai
 
 double Snell( double angolo, double index ){ //ritorna +- NAN se siamo in total internal reflection
 	return asin( sin( angolo ) / index );

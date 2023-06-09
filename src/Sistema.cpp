@@ -1,6 +1,13 @@
 #include "Sistema.hpp"
 #define e ldexp(1.0,-50)
 
+void OttimizzaLente(int i) {
+    if ((i<0)||(i>=lente.size())) return; // indice lente invalido
+    Lente& s = lente[i];
+            
+    
+    }
+
 Raggio Sistema :: Out_d (Raggio I) const { 
 	for(int i=0;i<lente.size();i++){
 		I = lente.at(i).Out_d(I);
