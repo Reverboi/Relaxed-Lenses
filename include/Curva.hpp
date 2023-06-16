@@ -9,6 +9,7 @@ struct Curva{
 	virtual void Log(std::ofstream& fpt) const = 0 ;      
 	virtual double operator()(double x)  const = 0 ;     
 	virtual double Derivata (double x)   const = 0 ;
+	virtual void Deform(double x){};
 	double Angolo(double x) const;
 	double Intersect(const Raggio& in) const;
 	//virtual Curva* Duplica() =0;

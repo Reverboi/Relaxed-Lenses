@@ -19,6 +19,8 @@ void Arco :: Log( std::ofstream& fpt ) const {
 	else       fpt<<"0, ";
         }
     }
+    
+void Arco :: Deform(double x) {R+=x;}
 
 int sign(double f){
 	if(f>0) return 1;

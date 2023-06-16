@@ -19,4 +19,5 @@ struct Sistema{
         double Score_f(double x) const;
         double GScore() const;
         void Gnuplotta(std::string destination) const;
+        void OttimizzaLente(int i);
 	};

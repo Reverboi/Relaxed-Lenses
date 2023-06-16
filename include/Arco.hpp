@@ -7,6 +7,7 @@ struct Arco : Curva {
 	double operator () (double x) const override;
 	double Derivata(double x) const override;
 	void Log(std::ofstream& fpt) const override;
+	void Deform(double x) override;
 	//Curva* Duplica() final {return new Arco(*this);};
     };
 

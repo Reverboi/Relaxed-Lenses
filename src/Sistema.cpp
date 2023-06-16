@@ -1,5 +1,28 @@
 #include "Sistema.hpp"
-#define e ldexp(1.0,-50)
+#define e ldexp(1.0,-30)
+#define eps ldexp(1.0,-20)
+void Sistema :: OttimizzaLente(int i){
+    if ((i<0)||(i>=lente.size())) return;
+    double scarto;
+    lente[i].Inf.Deform( e );
+    scarto=GScore();
+    lente[i].Inf.Deform( -2 * e );
+    scarto-=GScore();
+    double deriv_inf = scarto / (2 * e);
+    //std::cout<<"d inf = "<<deriv_inf<<std::endl;
+    lente[i].Inf.Deform( e );
+    
+    lente[i].Sup.Deform( e );
+    scarto=GScore();
+    lente[i].Sup.Deform( -2 * e );
+    scarto-=GScore();
+    double deriv_sup = scarto / (2 * e);
+    //std::cout<<"d sup = "<<deriv_sup<<std::endl;;
+    lente[i].Sup.Deform( e );
+    
+    lente[i].Inf.Deform(deriv_inf * eps);
+    lente[i].Sup.Deform(deriv_sup * eps);
+}
 
 Raggio Sistema :: Out_d (Raggio I) const { 
 	for(int i=0;i<lente.size();i++){
@@ -127,7 +150,7 @@ void Sistema :: Gnuplotta(std::string destination) const {
     fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm)"<<'"'<<"\n";
     fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm)"<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
-    fpt<<"plot [:][:] '../scores.dat' u 1:2 with lines lt rgb"<<'"'<<"orange"<<'"'
+    fpt<<"plot [:][-0.0025:0.0025] '../scores.dat' u 1:2 with lines lt rgb"<<'"'<<"orange"<<'"'
     <<", '../scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"'<<"\n";
     fpt<<"set ylabel "<<'"'<<"errore offset raggio (log10-scale) "<<'"'<<"\n";
     fpt<<"plot [:][:] '../scores.dat' u 1:4 with lines\n";
