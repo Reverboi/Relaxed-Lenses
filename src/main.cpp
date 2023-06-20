@@ -37,15 +37,15 @@ int main(){
 	
 	Polinomio dw1=Polinomio(inf);
 	Polinomio up1=Polinomio(sup);
-	current.InserisciLente(Lente( dw1, up1, 1.4756 ,1.47555));
+	current.InserisciLente(Lente( dw1, up1, 1.490 ,1.499));
 	
 	current.OttimizzaSensore();
 	
 	Arco dw0=Arco(10,24,-129);
-	Arco up0=Arco(40,24,-99);
-	current.InserisciLente(Lente( dw0, up0, 1.35, 1.6));
+	Arco up0=Arco(15,24,-124);
+	//current.InserisciLente(Lente( dw0, up0, 1.717, 1.7395));
 	for(int i=0;i<20;i++) current.OttimizzaLente(1);
-	current.OttimizzaSensore();
+	//current.OttimizzaSensore();
 	
 	inf.close();
         sup.close();
