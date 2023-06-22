@@ -22,7 +22,7 @@ questo genererà nella cartella in cui ti trovi tutti i necessari file per la co
 	Su sistemi Linux questo eseguirà la compilazionee ti lascerà con un eseguibile di nome *Relaxed-Lenses* che puoi eseguire digitando `./Relaxed-Lenses`.
 	Su Windows invece genererà una Visual Studio Solution da cui compilare e lanciare effettivamenete il programma.
 	In Visual Studio potrebbe essere necessario impostare Relaxed-Lenses come "Startup Project" affinchè tutto funzioni.
-# Formattazione file di inizializzazione di una curva polinomiale
+## Esempio di formattazione file di inizializzazione di una curva polinomiale
 Come già accennato è possibile inizializzare una curva free-form specificandone i parametri all'interno di un file di testo formattato come segue:
 ```
 A: 35                                      // il "raggio" della lente (semi-apertura)
