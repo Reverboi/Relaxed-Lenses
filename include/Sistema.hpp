@@ -1,6 +1,12 @@
 #include "Lente.hpp"
+#include <string>
 #define RISOLUZIONE_G_SCORE 64
 #define num_raggi 16
+#define e ldexp(1.0,-30)
+#define eps ldexp(1.0,-20)
+#define OUTPUT_DIR std::string("../data/output/")
+#define PLOT_DIR std::string("../data/plot/")
+
 struct Sistema{
 	std::vector<Lente> lente;
 	double AltezzaSensore;

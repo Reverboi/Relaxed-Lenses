@@ -1,6 +1,5 @@
 #include "Sistema.hpp"
-#define e ldexp(1.0,-30)
-#define eps ldexp(1.0,-20)
+
 void Sistema :: OttimizzaLente(int i){
     if ((i<0)||(i>=lente.size())) return;
     double scarto;
@@ -83,13 +82,13 @@ double Sistema :: GScore() const {
 	}
 	
 void Sistema :: Gnuplotta(std::string destination) const {
-        std::ofstream sens ("../dati/sensore.dat");
+        std::ofstream sens (OUTPUT_DIR + std::string("sensore.dat"));
         sens<<-DimensioneSensore<<" "<<AltezzaSensore<<"\n";
         sens<< DimensioneSensore<<" "<<AltezzaSensore;
         sens.close();
         
 	for(int i=1; i < num_raggi; i++){		//creo i file per i singoli raggi
-		std::ofstream fpt ("../dati/"+std::to_string(i)+"_d.dat");   //d
+		std :: ofstream fpt (OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));   //d
 		if ((fpt.is_open()) == false){
         	printf("Error! opening file");
         	exit(1);
@@ -102,7 +101,7 @@ void Sistema :: Gnuplotta(std::string destination) const {
 		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<<AltezzaSensore;
 		fpt.close();
 		
-		fpt = std::ofstream("../dati/"+std::to_string(i)+"_f.dat");     //f
+		fpt = std :: ofstream(OUTPUT_DIR + std::to_string(i) + std::string("_f.dat"));     //f
 		if ((fpt.is_open()) == false){
         	printf("Error! opening file");
         	exit(1);
@@ -115,13 +114,13 @@ void Sistema :: Gnuplotta(std::string destination) const {
 		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<< AltezzaSensore;
 		fpt.close();
 		}
-	std::ofstream fpt ("../data.gp");
+	std::ofstream fpt ( OUTPUT_DIR + std::string("data.gp"));
 	if ((fpt.is_open()) == false){
         printf("Error! opening file");
         exit(1);
     	}
     	
-    fpt<<("set terminal pdf\nset output '"+destination+"'\nset nokey\n");
+    fpt<<"set terminal pdf\nset output '"<< PLOT_DIR <<  destination << "'\nset nokey\n";
     fpt<<("set size ratio -1\n");
     fpt<<"set xlabel "<<'"'<<"Punteggio globale: "<<GScore()<<'"'<<"\n";
     fpt<<"unset xtics\n";
@@ -131,32 +130,32 @@ void Sistema :: Gnuplotta(std::string destination) const {
     Log(fpt);
     
     for(int i=1; i < num_raggi; i++){
-    	fpt<<"'../dati/"<<i<<"_d.dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
+    	fpt<<"'"<< OUTPUT_DIR <<i<<"_d.dat' u 1:2 with lines lt rgb "<<'"'<<"orange"<<'"';
     	fpt<<", ";
     	}
-    fpt<<" '../dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+    fpt<<" '"<< OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
     
     fpt<<"\nplot [-"<<Campo<<":"<<Campo<<"] [-20:"<<AltezzaSensore+20<<"] ";
     
     Log(fpt);
     
     for(int i=1; i < num_raggi; i++){
-    	fpt<<"'../dati/"<<i<<"_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
+        fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
     	/*if (i+1<num_raggi)*/ fpt<<", ";
     	}
-    fpt<<" '../dati/sensore.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+    fpt<<" '" << OUTPUT_DIR << "scores.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
     
     fpt<<"\nset xtics\n";
     fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm)"<<'"'<<"\n";
     fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm)"<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
-    fpt<<"plot [:][-0.0025:0.0025] '../scores.dat' u 1:2 with lines lt rgb"<<'"'<<"orange"<<'"'
-    <<", '../scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"'<<"\n";
-    fpt<<"set ylabel "<<'"'<<"errore offset raggio (log10-scale) "<<'"'<<"\n";
-    fpt<<"plot [:][:] '../scores.dat' u 1:4 with lines\n";
+    fpt<<"plot [:][-0.0025:0.0025] '" << OUTPUT_DIR << "scores.dat' u 1:2 with lines lt rgb" << '"' << "orange" << '"'
+    <<",'" << OUTPUT_DIR << "scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"' << "\n";
+    fpt << "set ylabel " << '"' << "errore offset raggio (log10-scale) " << '"' << "\n";
+    fpt << "plot [:][:] '" << OUTPUT_DIR << "scores.dat' u 1:4 with lines\n";
     //fpt<<"plot [:][:] 'eps.dat' with lines\n";
     fpt.close();
-    std::ofstream fpy ("../scores.dat");
+    std::ofstream fpy (OUTPUT_DIR + std::string("scores.dat"));
     
     if ((fpy.is_open()) == false){
     printf("Error! opening file");
@@ -170,7 +169,7 @@ void Sistema :: Gnuplotta(std::string destination) const {
     	fpy<< x <<' '<< t <<' '<< s <<' '<< log10(sqrt(t*t+s*s)) <<std::endl;
     	}
     fpy.close();
-    system("gnuplot -p ../data.gp"); // non funzionerà su windows forse
+    system( (std::string("gnuplot -p ") + OUTPUT_DIR + std::string("data.gp")).c_str() ); // non funzionerà su windows forse
     }
 
 void Sistema :: OttimizzaSensore() {    

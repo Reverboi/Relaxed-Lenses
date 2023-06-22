@@ -1,4 +1,5 @@
 #include "Polinomio.hpp"
+#include <string>
 
 double Polinomio :: operator()(double x) const {
 	double result=Quota;
