@@ -1,52 +1,40 @@
 #include "Sistema.hpp"
 
-void Sistema :: OttimizzaLente(int i){
-    if ((i<0)||(i>=lente.size())) return;
+void Sistema :: OttimizzaElemento(int i){
+    if ((i<0)||(i>=Elemento.size())) return;
     double scarto;
-    lente[i].Inf.Deform( e );
+    Elemento[i]->Deform( e );
     scarto=GScore();
-    lente[i].Inf.Deform( -2 * e );
+    Elemento[i]->Deform(-2 * e);
     scarto-=GScore();
     double deriv_inf = scarto / (2 * e);
-    //std::cout<<"d inf = "<<deriv_inf<<std::endl;
-    lente[i].Inf.Deform( e );
-    
-    lente[i].Sup.Deform( e );
-    scarto=GScore();
-    lente[i].Sup.Deform( -2 * e );
-    scarto-=GScore();
-    double deriv_sup = scarto / (2 * e);
-    //std::cout<<"d sup = "<<deriv_sup<<std::endl;;
-    lente[i].Sup.Deform( e );
-    
-    lente[i].Inf.Deform(deriv_inf * eps);
-    lente[i].Sup.Deform(deriv_sup * eps);
+    Elemento[i]->Deform( e + deriv_inf * eps);
 }
 
 Raggio Sistema :: Out_d (Raggio I) const { 
-	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out_d(I);
+	for(int i=0;i<Elemento.size();i++){
+		I = Elemento[i]->Out_d(I);
 		}
 	return I;
 	}
 
 Raggio Sistema :: Out_d (std::ofstream& fpt,Raggio I) const { // log version
-	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out_d(fpt,I);
+	for(int i=0;i<Elemento.size();i++){
+		I = Elemento.at(i)->Out_d(fpt,I);
 		}
 	return I;
 	}
 	
 Raggio Sistema :: Out_f (Raggio I) const { 
-	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out_f(I);
+	for(int i=0;i< Elemento.size();i++){
+		I = Elemento.at(i)->Out_f(I);
 		}
 	return I;
 	}
 
 Raggio Sistema :: Out_f (std::ofstream& fpt,Raggio I) const { // log version
-	for(int i=0;i<lente.size();i++){
-		I = lente.at(i).Out_f(fpt,I);
+	for(int i=0;i< Elemento.size();i++){
+		I = Elemento.at(i)->Out_f(fpt,I);
 		}
 	return I;
 	}
@@ -94,8 +82,8 @@ void Sistema :: Gnuplotta(std::string destination) const {
         	exit(1);
     		}
    		Raggio ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
-		for(int i=0;i<lente.size();i++){
-			Raggio a = lente[i].Out_d(fpt,ray);
+		for(int i=0;i< Elemento.size();i++){
+			Raggio a = Elemento[i]->Out_d(fpt,ray);
 			ray=a;
 			}
 		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<<AltezzaSensore;
@@ -107,8 +95,8 @@ void Sistema :: Gnuplotta(std::string destination) const {
         	exit(1);
     		}
    		ray = Raggio(fpt,-Campo+i*2*Campo/num_raggi,-AltezzaSensore/2,0.0);
-		for(int i=0;i<lente.size();i++){
-			Raggio a = lente[i].Out_f(fpt,ray);
+		for(int i=0;i< Elemento.size();i++){
+			Raggio a = Elemento[i]->Out_f(fpt,ray);
 			ray=a;
 			}
 		fpt << ray.X+(ray.Y-AltezzaSensore)*tan(ray.A) <<" "<< AltezzaSensore;
@@ -143,13 +131,13 @@ void Sistema :: Gnuplotta(std::string destination) const {
         fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb "<<'"'<<"blue"<<'"';
     	/*if (i+1<num_raggi)*/ fpt<<", ";
     	}
-    fpt<<" '" << OUTPUT_DIR << "scores.dat' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
+    fpt<<" '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb "<<'"'<<"green"<<'"';
     
     fpt<<"\nset xtics\n";
     fpt<<"set xlabel "<<'"'<<"Campo inquadrato (mm)"<<'"'<<"\n";
     fpt<<"set ylabel "<<'"'<<"errore offset raggio (mm)"<<'"'<<"\n";
     fpt<<("\nset size noratio\n");
-    fpt<<"plot [:][-0.0025:0.0025] '" << OUTPUT_DIR << "scores.dat' u 1:2 with lines lt rgb" << '"' << "orange" << '"'
+    fpt<<"plot [:][-0.3:0.3] '" << OUTPUT_DIR << "scores.dat' u 1:2 with lines lt rgb" << '"' << "orange" << '"'
     <<",'" << OUTPUT_DIR << "scores.dat' u 1:3 with lines lt rgb"<<'"'<<"blue"<<'"' << "\n";
     fpt << "set ylabel " << '"' << "errore offset raggio (log10-scale) " << '"' << "\n";
     fpt << "plot [:][:] '" << OUTPUT_DIR << "scores.dat' u 1:4 with lines\n";
@@ -198,17 +186,17 @@ void Sistema :: OttimizzaSensore() {
       }
     }
 
-Sistema :: Sistema(const Sistema& source) : AltezzaSensore(source.AltezzaSensore), DimensioneSensore(source.DimensioneSensore), Campo(source.Campo){
-    for(Lente s : source.lente) lente.push_back(Lente(s)); 
-    }
-
-void Sistema :: InserisciLente(const Lente& q){
-    lente.push_back(q);
-    //std::sort(lente.begin(),lente.end(),[](const Lente& a, const Lente& b){return a.Inf.Quota < b.Inf.Quota;});
-	}
+void Sistema::InserisciElemento( Curva* q ) {
+    Elemento.push_back(q);
+    std::sort(Elemento.begin(), Elemento.end(), [](const Curva* a, const Curva* b) {return a->operator()(0) < b->operator()(0); });
+}
 
 void Sistema :: Log(std::ofstream &fpt) const {
-	for(int i=0;i<lente.size();i++){
-		lente[i].Log(fpt);
+	for(int i=0;i<Elemento.size();i++){
+		Elemento[i]->Log(fpt);
 		}
 	}
+
+Sistema :: ~Sistema() {
+    for (int i = 0; i < Elemento.size(); i++) delete Elemento[i];
+}

@@ -2,8 +2,8 @@
 
 struct Arco : Curva {
 	double R;              // 1/raggio di curvatura
-	Arco (double quota, double amp, double rag) : R(1.0/rag), Curva(quota, amp) {};
-	Arco (double quota, double amp) : Curva(quota, amp), R (0.0) {}  //  Siccome non posso passargli Infinity...
+	Arco (double quota, double amp, double rag, double r1, double r2, double b1, double b2) : R(1.0/rag), Curva(quota, amp, r1,r2,b1,b2) {};
+	Arco (double quota, double amp, double r1, double r2, double b1, double b2) : Curva(quota, amp, r1, r2, b1, b2), R (0.0) {}  //  Siccome non posso passargli Infinity...In realtà potrei
 	double operator () (double x) const override;
 	double Derivata(double x) const override;
 	void Log(std::ofstream& fpt) const override;

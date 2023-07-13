@@ -26,3 +26,26 @@ double Curva:: Intersect(const Raggio& in) const{
 	return x1;
 	}
 	
+Raggio Curva::Out_f(std::ofstream& fpt, const Raggio& I) const { //log version
+	double x = Intersect(I);
+	return Raggio(fpt, x, operator()(x), Snell(I.A - Angolo(x), IndiceBluSopra/IndiceBluSotto) + Angolo(x));
+}
+
+Raggio Curva::Out_f(const Raggio& I) const {
+	double x = Intersect(I);
+	return Raggio( x, operator()(x), Snell(I.A - Angolo(x), IndiceBluSopra / IndiceBluSotto) + Angolo(x));
+}
+
+Raggio Curva::Out_d(std::ofstream& fpt, const Raggio& I) const { //log version
+	double x = Intersect(I);
+	return Raggio(fpt, x, operator()(x), Snell(I.A - Angolo(x), IndiceRossoSopra / IndiceRossoSotto) + Angolo(x));
+}
+
+Raggio Curva::Out_d(const Raggio& I) const {
+	double x = Intersect(I);
+	return Raggio(x, operator()(x), Snell(I.A - Angolo(x), IndiceRossoSopra / IndiceRossoSotto) + Angolo(x));
+}
+
+double Snell(double angolo, double index) { //ritorna +- NAN se siamo in total internal reflection
+	return asin(sin(angolo) / index);
+}

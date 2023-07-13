@@ -17,7 +17,7 @@ double Polinomio :: Derivata( double x ) const {
 	return result;
 	}
 
-Polinomio :: Polinomio( std::ifstream& inp ){
+Polinomio :: Polinomio( std::ifstream& inp, double r1, double r2, double b1, double b2 ): Curva(0,0, r1, r2, b1, b2){
         std::string line;
         std::string numline;
         while (std::getline(inp, line)) {  // read each line from the file
