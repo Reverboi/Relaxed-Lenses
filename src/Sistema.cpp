@@ -1,5 +1,5 @@
 #include "Sistema.hpp"
-
+using namespace RelaxedLenses;
 void Sistema :: OttimizzaElemento(int i){
     if ((i<0)||(i>=Elemento.size())) return;
     double scarto;
@@ -9,6 +9,10 @@ void Sistema :: OttimizzaElemento(int i){
     scarto-=GScore();
     double deriv_inf = scarto / (2 * e);
     Elemento[i]->Deform( e + deriv_inf * eps);
+}
+
+void OttimizzaPosizioneLente(Curva& a, Curva& b) {
+
 }
 
 Raggio Sistema :: Out_d (Raggio I) const { 
@@ -199,4 +203,28 @@ void Sistema :: Log(std::ofstream &fpt) const {
 
 Sistema :: ~Sistema() {
     for (int i = 0; i < Elemento.size(); i++) delete Elemento[i];
+}
+
+Arco* Sistema :: NuovoArco(double quota, double amp, double rag, double r1, double b1, double r2, double b2) {
+    Arco* elem = new Arco(quota, amp, rag, r1, b1, r2, b2);
+    Elemento.push_back(elem);
+    return elem;
+}
+
+Arco* Sistema :: NuovoArco(double quota, double amp, double r1, double b1, double r2, double b2) {
+    Arco* elem = new Arco(quota, amp, r1, b1, r2, b2);
+    Elemento.push_back(elem);
+    return elem;
+}
+
+Polinomio* Sistema ::NuovoPolinomio(std::ifstream& inp, double r1, double b1, double r2, double b2) {
+    Polinomio* elem = new Polinomio(inp, r1,  b1,  r2, b2);
+    Elemento.push_back(elem);
+    return elem;
+}
+
+Punti* Sistema :: NuovoPunti(std::ifstream& inp, double quota, double ampiezza, double r1, double b1, double r2, double b2) {
+    Punti* elem = new Punti(inp, quota, ampiezza, r1, b1, r2, b2);
+    Elemento.push_back(elem);
+    return elem;
 }

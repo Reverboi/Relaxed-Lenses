@@ -1,25 +1,27 @@
 #include <iostream>
 #include <fstream>
-#include <cmath>
 #include <time.h>
 #include <vector>
 #include <string>
 
 #include "Sistema.hpp"
-#include "Polinomio.hpp"
-#include "Arco.hpp"
-#include "Punti.hpp"
 
+#define AIR 1.003
+
+#define PLEXIGLASS_R	1.499
+#define PLEXIGLASS_B	1.490
+
+#define POLYCARBON_R	1.585
+#define POLYCARBON_B	1.603
 
 #define CAMPO 28
-#define AIR 1.003
 #define DIMENSIONE_SENSORE  3.3
 #define ALTEZZA_SENSORE 150
 
 #define INPUT_DIR std::string("../data/input/")
 
 using namespace std;
-
+using namespace RelaxedLenses;
 // misure in mm
 
 int main(){
@@ -36,12 +38,9 @@ int main(){
 
 	Sistema current = Sistema( ALTEZZA_SENSORE, DIMENSIONE_SENSORE,  CAMPO );
 	
-	Punti* dw0 = new Punti(inf ,0, 35, AIR,   1.499, AIR,   1.49);
-	Punti* up0 = new Punti(sup, 0, 35, 1.499, AIR,   1.49, AIR);
+	Punti* dw0 = current.NuovoPunti(inf ,0, 35, AIR, AIR,				  PLEXIGLASS_R, PLEXIGLASS_B);
+	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
 
-	//current.InserisciLente(Lente( dw0, up0, 1.490 ,1.499));   //veri valori PMMA
-	current.InserisciElemento(dw0);
-	current.InserisciElemento(up0);
 	inf.close();
 	sup.close();
 	current.OttimizzaSensore();
@@ -59,8 +58,8 @@ int main(){
 		exit(1);
 	}
 
-	Punti* dw1 = new Punti(infi, 130.5,- 3.3, AIR, 1.499, AIR, 1.49);
-	Punti* up1 = new Punti(supi, 130.5,- 3.3, 1.499, AIR, 1.49, AIR);
+	Punti* dw1 = new Punti(infi, 130.5,- 3.3, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
+	Punti* up1 = new Punti(supi, 130.5,- 3.3, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
 
 	//current.InserisciLente(Lente( dw0, up0, 1.490 ,1.499));   //veri valori PMMA
 	current.InserisciElemento(dw1);

@@ -1,4 +1,8 @@
-#include <Curva.hpp>
+
+#include "Curva.hpp"
+#include "Polinomio.hpp"
+#include "Arco.hpp"
+#include "Punti.hpp"
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -8,27 +12,33 @@
 #define eps ldexp(1.0,-20)
 #define OUTPUT_DIR std::string("../data/output/")
 #define PLOT_DIR std::string("../data/plot/")
-
-struct Sistema{
-	//std::vector<Lente> lente;
-	std::vector<Curva*> Elemento;
-	double AltezzaSensore;
-	double DimensioneSensore; // metà della lunghezza del sensore
-	double Campo;             // metà del campo inquadrato
-	Raggio Out_d (Raggio in) const;
-	Raggio Out_f (Raggio in) const;
-	void Log(std::ofstream& fpt) const;
-	Raggio Out_d (std::ofstream &fpt, Raggio in) const;
-	Raggio Out_f (std::ofstream &fpt, Raggio in) const;
-        Sistema(double altSen, double dimSen, double camp) : AltezzaSensore(altSen), DimensioneSensore(dimSen), Campo(camp) {};
-        //Sistema(const Sistema& source);
-        //void InserisciLente(const Lente&);
-		void InserisciElemento( Curva* );
-        void OttimizzaSensore();
-        double Score_d(double x) const;
-        double Score_f(double x) const;
-        double GScore() const;
-        void Gnuplotta(std::string destination) const;
-        void OttimizzaElemento(int i);
+namespace RelaxedLenses {
+	struct Sistema {
+		//std::vector<Lente> lente;
+		std::vector<Curva*> Elemento;
+		double AltezzaSensore;
+		double DimensioneSensore; // metà della lunghezza del sensore
+		double Campo;             // metà del campo inquadrato
+		Raggio Out_d(Raggio in) const;
+		Raggio Out_f(Raggio in) const;
+		void Log(std::ofstream& fpt) const;
+		Raggio Out_d(std::ofstream& fpt, Raggio in) const;
+		Raggio Out_f(std::ofstream& fpt, Raggio in) const;
+		Sistema(double altSen, double dimSen, double camp) : AltezzaSensore(altSen), DimensioneSensore(dimSen), Campo(camp) {};
+		//Sistema(const Sistema& source);
+		//void InserisciLente(const Lente&);
+		void InserisciElemento(Curva*);		//viola la regola del one new one delete
+		void OttimizzaSensore();
+		double Score_d(double x) const;
+		double Score_f(double x) const;
+		double GScore() const;
+		void Gnuplotta(std::string destination) const;
+		void OttimizzaElemento(int i);
+		void OttimizzaPosizioneLente(Curva& a, Curva& b);
+		Arco* NuovoArco(double quota, double amp, double rag, double r1, double b1, double r2, double b2);
+		Arco* NuovoArco(double quota, double amp, double r1, double b1, double r2, double b2);
+		Polinomio* NuovoPolinomio(std::ifstream& inp, double r1, double r2, double b1, double b2);   
+		Punti* NuovoPunti(std::ifstream& inp, double quota, double ampiezza, double r1, double r2, double b1, double b2);
 		~Sistema();
-};
+	};
+}
