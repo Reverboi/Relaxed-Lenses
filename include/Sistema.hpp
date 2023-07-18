@@ -33,8 +33,8 @@ namespace RelaxedLenses {
 		double Score_f(double x) const;
 		double GScore() const;
 		void Gnuplotta(std::string destination) const;
-		void OttimizzaElemento(int i);
-		void OttimizzaPosizioneLente(Curva& a, Curva& b);
+		void OttimizzaElemento( Curva * );
+		void OttimizzaPosizioneLente(Curva* a, Curva* b);
 		Arco* NuovoArco(double quota, double amp, double rag, double r1, double b1, double r2, double b2);
 		Arco* NuovoArco(double quota, double amp, double r1, double b1, double r2, double b2);
 		Polinomio* NuovoPolinomio(std::ifstream& inp, double r1, double r2, double b1, double b2);   

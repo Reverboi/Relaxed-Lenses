@@ -140,14 +140,8 @@ namespace RelaxedLenses {
     }
 
     void Punti::Log(std::ofstream& fpt) const {
-        /*
-        if( fpt.is_open() ){
-        fpt << Quota;
-        for(int i=0;i<Q.size();i++){
-            fpt<<" + "<<Q[i]<<" * ("<<Ampiezza<<"**"<<(i+1)*2<<" - x**"<<(i+1)*2<<") / "<<Ampiezza<<"**"<<(i+1)*2;
-            }
+        if (fpt.is_open()) {
+            fpt << Quota << ", " << this->operator()(0) << ", ";
         }
-        fpt<<", ";
-        */
     }
 }

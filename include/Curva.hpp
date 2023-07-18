@@ -15,14 +15,13 @@ namespace RelaxedLenses {
 		virtual void Log(std::ofstream& fpt) const = 0;
 		virtual double operator()(double x)  const = 0;
 		virtual double Derivata(double x)   const = 0;
-		virtual void Deform(double x) {};
+		virtual void Deform(double x) {};		// necessario che sia reversibile;
 		double Angolo(double x) const;
 		double Intersect(const Raggio& in) const;
 		Raggio Out_f(std::ofstream& fpt, const Raggio& I) const;
 		Raggio Out_f(const Raggio& I) const;
 		Raggio Out_d(std::ofstream& fpt, const Raggio& I) const;
 		Raggio Out_d(const Raggio& I) const;
-		//virtual Curva* Duplica() =0;
 	};
 
 	double Snell(double angolo, double index);

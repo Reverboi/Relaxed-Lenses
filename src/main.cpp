@@ -15,7 +15,7 @@
 #define POLYCARBON_B	1.603
 
 #define CAMPO 28
-#define DIMENSIONE_SENSORE  3.3
+#define DIMENSIONE_SENSORE  3.4
 #define ALTEZZA_SENSORE 150
 
 #define INPUT_DIR std::string("../data/input/")
@@ -41,33 +41,23 @@ int main(){
 	Punti* dw0 = current.NuovoPunti(inf ,0, 35, AIR, AIR,				  PLEXIGLASS_R, PLEXIGLASS_B);
 	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
 
-	inf.close();
-	sup.close();
+	
 	current.OttimizzaSensore();
 	current.Gnuplotta("single.pdf");
-	
+	inf.close();
+	sup.close();
+	inf.open(INPUT_DIR + string("downPoints.dat"));
+	sup.open(INPUT_DIR + string("upPoints.dat"));
+	;
 
-	ifstream infi (INPUT_DIR + string("upPoints.dat"));
-	if ((infi.is_open()) == false) {
-		printf("Error! opening file");
-		exit(1);
-	}
-	ifstream supi (INPUT_DIR + string("downPoints.dat"));
-	if ((supi.is_open()) == false) {
-		printf("Error! opening file");
-		exit(1);
-	}
+	Punti* dw1 = current.NuovoPunti(inf, 120.5, 4.0, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
+	Punti* up1 = current.NuovoPunti(sup, 120.5, 4.0, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
 
-	Punti* dw1 = new Punti(infi, 130.5,- 3.3, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
-	Punti* up1 = new Punti(supi, 130.5,- 3.3, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
-
-	//current.InserisciLente(Lente( dw0, up0, 1.490 ,1.499));   //veri valori PMMA
-	current.InserisciElemento(dw1);
-	current.InserisciElemento(up1);
-	infi.close();
-	supi.close();
-	current.AltezzaSensore += 25;
+	current.OttimizzaPosizioneLente(dw1, up1);
 	current.OttimizzaSensore();
+	current.OttimizzaPosizioneLente(dw1, up1);
+	//current.OttimizzaElemento(dw1);
+
 	/*
 	up0->IndiceBluSopra = 1.603;
 	up0->IndiceRossoSopra = 1.5847;
