@@ -69,17 +69,17 @@ int main(){
 
 	Punti* dw2 = current.NuovoPunti(inf, 132, DIMENSIONE_SENSORE, AIR, AIR, PLEXIGLASS, PLEXIGLASS);
 	Punti* up2 = current.NuovoPunti(sup, 132, DIMENSIONE_SENSORE, PLEXIGLASS, PLEXIGLASS, AIR, AIR);
-	current.AltezzaSensore += 10;
+	current.Sensore.Quota += 10;
 	current.OttimizzaPosizioneSensore();
-	current.OttimizzaDimensioneSensore();
+	current.OttimizzaAmpiezzaSensore();
 	current.OttimizzaPosizioneLente(dw2, up2);
 	current.OttimizzaPosizioneSensore();
-	current.OttimizzaDimensioneSensore();
-	current.AltezzaSensore += 5;
+	current.OttimizzaAmpiezzaSensore();
+	current.Sensore.Quota += 5;
 	current.Gnuplotta("triple.pdf");
 	inf.close();
 	sup.close();
 
-	cout << "sensore at " << current.AltezzaSensore << endl;
+	cout << "sensore at " << current.Sensore.Quota << endl;
 	cout<<endl<<"... COMPLETED!.."<<endl;
 	}
