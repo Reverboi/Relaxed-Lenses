@@ -190,7 +190,37 @@ namespace RelaxedLenses {
         std::cout << "quota lente ottimizzata = " << a->Quota << std::endl;
     }
 
-    void Sistema::OttimizzaSensore() {
+    void Sistema::OttimizzaAmpiezzaLente(Curva* a, Curva* b) {
+        double fx, bx;
+        double cx = GScore();
+        double crawl = AltezzaSensore / 2.0;
+        std::cout << "Ampiezza lente iniziale = " << a->Ampiezza << std::endl;
+        for (int i = 0; (i < 24) && (crawl * crawl >= e); i++) {
+            a->Ampiezza += crawl;
+            b->Ampiezza += crawl;
+            fx = GScore();
+            if (fx > cx) {
+                cx = fx;
+                continue;
+            }
+            a->Ampiezza -= 2 * crawl;
+            b->Ampiezza -= 2 * crawl;
+            bx = GScore();
+            if (bx > cx) {
+                cx = bx;
+                crawl = -crawl;
+                continue;
+            }
+            else {
+                a->Ampiezza += crawl;
+                b->Ampiezza += crawl;
+                crawl = crawl / 2.0;
+            }
+        }
+        std::cout << "Ampiezza lente ottimizzata = " << a->Ampiezza << std::endl;
+    }
+
+    void Sistema::OttimizzaPosizioneSensore() {
         double fx, bx;
         double cx = GScore();
         double crawl = AltezzaSensore / 2.0;
@@ -215,6 +245,33 @@ namespace RelaxedLenses {
             }
         }
         std::cout << "quota sensore ottimizzata = " << AltezzaSensore << std::endl;
+    }
+
+    void Sistema::OttimizzaDimensioneSensore() {
+        double fx, bx;
+        double cx = GScore();
+        double crawl = DimensioneSensore / 2.0;
+        std::cout << "dimensione sensore iniziale = " << DimensioneSensore << std::endl;
+        for (int i = 0; (i < 24) && (crawl * crawl >= e); i++) {
+            DimensioneSensore += crawl;
+            fx = GScore();
+            if (fx > cx) {
+                cx = fx;
+                continue;
+            }
+            DimensioneSensore -= 2 * crawl;
+            bx = GScore();
+            if (bx > cx) {
+                cx = bx;
+                crawl = -crawl;
+                continue;
+            }
+            else {
+                DimensioneSensore += crawl;
+                crawl = crawl / 2.0;
+            }
+        }
+        std::cout << "Dimensione sensore ottimizzata = " << DimensioneSensore << std::endl;
     }
 
     void Sistema::InserisciElemento(Curva* q) {
@@ -256,4 +313,53 @@ namespace RelaxedLenses {
         return elem;
     }
 
+    void Sistema::OttimizzaParametri(double& s, double& v) {
+        double* p[2] = { &s, &v };
+        double d[2];
+        for (int j = 0; j < 20; j++) {
+            double grad = 0;
+            for (int i = 0; i < 2; i++) {
+
+                *p[i] += e;
+                double fy = GScore();
+                *p[i] -= 2 * e;
+                double by = GScore();
+                *p[i] += e;
+
+                d[i] = (fy - by) / (2 * e);
+                grad += d[i] * d[i];
+            }
+            if (grad <= TRESH * 2) {
+                std::cout << "broke at : " <<j<< std::endl;
+                break;
+            }
+            for (int i = 0; i < 2; i++) *p[i] += d[i] * eps;
+        }
+    }
+
+    void Sistema::OttimizzaParametri(std::vector<double*> c, std::vector<double*> b) {
+        double d[2];
+        std::vector<std::vector<double*>> a = { c, b };
+        for (int j = 0; j < 200; j++) {
+            double grad = 0;
+            for (int i = 0; i < a.size(); i++) {
+
+                for (int k = 0; k < a[i].size(); k++) *a[i][k] += e;
+                double fy = GScore();
+                for (int k = 0; k < a[i].size(); k++) *a[i][k] -= 2 * e;
+                double by = GScore();
+                for (int k = 0; k < a[i].size(); k++) *a[i][k] += e;
+
+                d[i] = (fy - by) / (2 * e);
+                grad += d[i] * d[i];
+            }
+            if (grad <= TRESH * 2) {
+                std::cout << "broke at : " << j << "with grad = " << grad << std::endl;
+                break;
+            }
+            for (int i = 0; i < a.size(); i++) {
+                for (int k = 0; k < a[i].size(); k++) *a[i][k] += d[i] * eps;
+            }
+        }
+    }
 }

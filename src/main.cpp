@@ -6,10 +6,11 @@
 
 #include "Sistema.hpp"
 
-#define AIR 1.003
+#define AIR 1.0003
 
 #define PLEXIGLASS_R	1.499
 #define PLEXIGLASS_B	1.490
+#define PLEXIGLASS		1.494
 
 #define POLYCARBON_R	1.585
 #define POLYCARBON_B	1.603
@@ -42,36 +43,43 @@ int main(){
 	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
 
 	
-	current.OttimizzaSensore();
+	current.OttimizzaPosizioneSensore();
 	current.Gnuplotta("single.pdf");
 	inf.close();
 	sup.close();
 	inf.open(INPUT_DIR + string("downPoints.dat"));
 	sup.open(INPUT_DIR + string("upPoints.dat"));
-	;
 
 	Punti* dw1 = current.NuovoPunti(inf, 120.5, 4.0, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
 	Punti* up1 = current.NuovoPunti(sup, 120.5, 4.0, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
 
 	current.OttimizzaPosizioneLente(dw1, up1);
-	current.OttimizzaSensore();
-	current.OttimizzaPosizioneLente(dw1, up1);
-	//current.OttimizzaElemento(dw1);
-
-	/*
-	up0->IndiceBluSopra = 1.603;
-	up0->IndiceRossoSopra = 1.5847;
-	Arco* dw1 = new Arco(8, 24, 450, 1.5847, AIR, 1.603, AIR);
-	
-	current.InserisciElemento(dw1);
-	//current.OttimizzaSensore();
-	for (int i = 0; i < 30; i++) {
-		current.OttimizzaElemento(2);
-	}
-	*/
-
-	//current.OttimizzaSensore();
-	
+	//current.OttimizzaAmpiezzaLente(dw1, up1);
+	//current.OttimizzaAmpiezzaLente(dw0, up0);
+	//vector<double*> amp = { &up1->Ampiezza, &dw1->Ampiezza };
+	//vector<double*> quo = { &up1->Quota, &dw1->Quota };
+	//current.OttimizzaParametri(amp,quo);
+	current.OttimizzaPosizioneSensore();
 	current.Gnuplotta("double.pdf");
+	//current.OttimizzaPosizioneLente(dw1, up1);
+	inf.close();
+	sup.close();
+	inf.open(INPUT_DIR + string("downPoints.dat"));
+	sup.open(INPUT_DIR + string("upPoints.dat"));
+
+	Punti* dw2 = current.NuovoPunti(inf, 132, DIMENSIONE_SENSORE, AIR, AIR, PLEXIGLASS, PLEXIGLASS);
+	Punti* up2 = current.NuovoPunti(sup, 132, DIMENSIONE_SENSORE, PLEXIGLASS, PLEXIGLASS, AIR, AIR);
+	current.AltezzaSensore += 10;
+	current.OttimizzaPosizioneSensore();
+	current.OttimizzaDimensioneSensore();
+	current.OttimizzaPosizioneLente(dw2, up2);
+	current.OttimizzaPosizioneSensore();
+	current.OttimizzaDimensioneSensore();
+	current.AltezzaSensore += 5;
+	current.Gnuplotta("triple.pdf");
+	inf.close();
+	sup.close();
+
+	cout << "sensore at " << current.AltezzaSensore << endl;
 	cout<<endl<<"... COMPLETED!.."<<endl;
 	}

@@ -9,7 +9,8 @@
 #define RISOLUZIONE_G_SCORE 64
 #define num_raggi 16
 #define e ldexp(1.0,-30)
-#define eps ldexp(1.0,-20)
+#define eps ldexp(1.0,-3)
+#define TRESH 10e-8
 #define OUTPUT_DIR std::string("../data/output/")
 #define PLOT_DIR std::string("../data/plot/")
 namespace RelaxedLenses {
@@ -28,13 +29,17 @@ namespace RelaxedLenses {
 		//Sistema(const Sistema& source);
 		//void InserisciLente(const Lente&);
 		void InserisciElemento(Curva*);		//viola la regola del one new one delete
-		void OttimizzaSensore();
+		void OttimizzaPosizioneSensore();
 		double Score_d(double x) const;
 		double Score_f(double x) const;
 		double GScore() const;
 		void Gnuplotta(std::string destination) const;
+		void OttimizzaParametri(double& s, double& v);
+		void OttimizzaParametri(std::vector<double*>, std::vector<double*>);
 		void OttimizzaElemento( Curva * );
 		void OttimizzaPosizioneLente(Curva* a, Curva* b);
+		void OttimizzaAmpiezzaLente(Curva* a, Curva* b);
+		void OttimizzaDimensioneSensore();
 		Arco* NuovoArco(double quota, double amp, double rag, double r1, double b1, double r2, double b2);
 		Arco* NuovoArco(double quota, double amp, double r1, double b1, double r2, double b2);
 		Polinomio* NuovoPolinomio(std::ifstream& inp, double r1, double r2, double b1, double b2);   
