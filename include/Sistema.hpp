@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#define RISOLUZIONE_G_SCORE 64
+#define RISOLUZIONE 64
 #define num_raggi 16
 #define e ldexp(1.0,-30)
 #define eps ldexp(1.0,-3)
@@ -15,7 +15,12 @@
 #define PLOT_DIR std::string("../data/plot/")
 namespace RelaxedLenses {
 	struct Sistema {
-		//std::vector<Lente> lente;
+		std::vector<std::vector<Raggio>> Data_d;
+		std::vector<std::vector<Raggio>> Data_f;
+
+		Raggio raggioIniziale;
+		Raggio raggioFinale;
+
 		std::vector<Curva*> Elemento;
 		//double Sensore.Quota;
 		Curva& Sensore; // metà della lunghezza del sensore
@@ -27,12 +32,15 @@ namespace RelaxedLenses {
 		Raggio Out_f(std::ofstream& fpt, Raggio in) const;
 		Sistema(double altSen, double dimSen, double camp);
 		
+		void Elabora(int res);
+		void Elabora() { Elabora(RISOLUZIONE); };
+
 		void InserisciElemento(Curva*);		//viola la regola del one new one delete
 		void OttimizzaPosizioneSensore();
 		double Score_d(double x) const;
 		double Score_f(double x) const;
-		double GScore() const;
-		void Gnuplotta(std::string destination) const;
+		double GScore();
+		void Gnuplotta(std::string destination);
 		
 		void OttimizzaParametri(double& s, double& v);
 		void OttimizzaParametri(std::vector<double*>, std::vector<double*>);

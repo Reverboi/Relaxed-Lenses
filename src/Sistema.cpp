@@ -1,7 +1,12 @@
 #include "Sistema.hpp"
 namespace RelaxedLenses {
-    Sistema::Sistema(double altSen, double dimSen, double camp) :  Campo(camp), Sensore(*NuovoArco(altSen, dimSen, 1, 1, 1, 1)) {}
-    
+    Sistema::Sistema(double altSen, double dimSen, double camp) :
+        Campo(camp),
+        Sensore(*NuovoArco(altSen, dimSen, 1, 1, 1, 1)),
+        raggioIniziale(-camp, -altSen / 4.0, 0),
+        raggioFinale(0, -altSen / 4.0, 0) {}
+    ;
+
     void Sistema::OttimizzaElemento(Curva* elem) {
         double scarto;
         elem->Deform(e);
@@ -9,7 +14,7 @@ namespace RelaxedLenses {
         elem->Deform(-2 * e);
         scarto -= GScore();
         double deriv_inf = scarto / (2 * e);
-        elem->Deform(e + deriv_inf * eps);
+        elem->Deform(e - deriv_inf * eps);
     }
 
     Raggio Sistema::Out_d(Raggio I) const {
@@ -56,10 +61,10 @@ namespace RelaxedLenses {
         if (out.X != out.X) return (Campo + Sensore.Ampiezza);
         return out.X - target;
     }
-
+    /*
     double Sistema::GScore() const {
         double res = 0.0;
-        int G = RISOLUZIONE_G_SCORE;
+        int G = RISOLUZIONE;
         for (int i = 0; i < G; i++) {
             double  x = -Campo + i * Campo / G;
             double s1 = Score_d(x);
@@ -68,25 +73,58 @@ namespace RelaxedLenses {
         }
         return res / (2 * G * Sensore.Ampiezza * Sensore.Ampiezza); // normalizzato sulla dimensione del sensore
     }
+    */
+    double Sistema::GScore() {
+        Elabora();
+        double res_d = 0.0, res_f = 0.0;
+        for (int i = 0; i < Data_d.size(); i++) {
+            double r = -Data_d[i].rbegin()->X - Data_d[i].begin()->X * Sensore.Ampiezza / Campo;
+            res_d += r * r;
+        }
+        for (int i = 0; i < Data_f.size(); i++) {
+            double r = -Data_f[i].rbegin()->X - Data_f[i].begin()->X * Sensore.Ampiezza / Campo;
+            res_f += r * r;
+        }
+        return (res_d / Data_d.size() + res_f / Data_f.size()) / ( 2 * Sensore.Ampiezza * Sensore.Ampiezza);
+    }
 
-    void Sistema::Gnuplotta(std::string destination) const {
+    void Sistema::Elabora(int res) {
+        Data_d.clear();
+        Data_f.clear();
+        for (int i = 0; i < res; i++) {
+            Raggio R = Raggio(
+                raggioIniziale.X + (raggioFinale.X - raggioIniziale.X) * i / res,
+                raggioIniziale.Y + (raggioFinale.Y - raggioIniziale.Y) * i / res,
+                raggioIniziale.A + (raggioFinale.A - raggioIniziale.A) * i / res);
+            std::vector<Raggio> entry_d, entry_f;
+            entry_d.push_back(R);
+            entry_f.push_back(R);
+            for (int j = 0; j < Elemento.size(); j++) {
+                entry_d.push_back(Elemento[j]->Out_d(entry_d[j]));
+                entry_f.push_back(Elemento[j]->Out_f(entry_f[j]));
+            }
+            Data_d.push_back(std::move(entry_d));  
+            Data_f.push_back(std::move(entry_f));
+        }
+    }
+
+    void Sistema::Gnuplotta(std::string destination) {
         std::ofstream sens(OUTPUT_DIR + std::string("sensore.dat"));
         sens << -Sensore.Ampiezza << " " << Sensore.Quota << "\n";
         sens << Sensore.Ampiezza << " " << Sensore.Quota;
         sens.close();
-
+        Elabora(num_raggi);
         for (int i = 1; i < num_raggi; i++) {		//creo i file per i singoli raggi
             std::ofstream fpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));   //d
+            std::ofstream rfpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));
             if ((fpt.is_open()) == false) {
                 printf("Error! opening file");
                 exit(1);
             }
-            Raggio ray = Raggio(fpt, -Campo + i * 2 * Campo / num_raggi, -Sensore.Quota / 2, 0.0);
-            for (int i = 0; i < Elemento.size(); i++) {
-                Raggio a = Elemento[i]->Out_d(fpt, ray);
-                ray = a;
+
+            for (int j = 0; j < Data_d[i].size(); j++) {
+                fpt << Data_d[i][j].X << " " << Data_d[i][j].Y << '\n';
             }
-            fpt << ray.X + (ray.Y - Sensore.Quota) * tan(ray.A) << " " << Sensore.Quota;
             fpt.close();
 
             fpt = std::ofstream(OUTPUT_DIR + std::to_string(i) + std::string("_f.dat"));     //f
@@ -94,12 +132,10 @@ namespace RelaxedLenses {
                 printf("Error! opening file");
                 exit(1);
             }
-            ray = Raggio(fpt, -Campo + i * 2 * Campo / num_raggi, -Sensore.Quota / 2, 0.0);
-            for (int i = 0; i < Elemento.size(); i++) {
-                Raggio a = Elemento[i]->Out_f(fpt, ray);
-                ray = a;
+
+            for (int j = 0; j < Data_f[i].size(); j++) {
+                fpt << Data_f[i][j].X << " " << Data_f[i][j].Y << '\n';
             }
-            fpt << ray.X + (ray.Y - Sensore.Quota) * tan(ray.A) << " " << Sensore.Quota;
             fpt.close();
         }
         std::ofstream fpt(OUTPUT_DIR + std::string("data.gp"));
@@ -107,7 +143,7 @@ namespace RelaxedLenses {
             printf("Error! opening file");
             exit(1);
         }
-
+        
         fpt << "set terminal pdf\nset output '" << PLOT_DIR << destination << "'\nset nokey\n";
         fpt << ("set size ratio -1\n");
         fpt << "set xlabel " << '"' << "Punteggio globale: " << GScore() << '"' << "\n";
@@ -129,7 +165,7 @@ namespace RelaxedLenses {
 
         for (int i = 1; i < num_raggi; i++) {
             fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb " << '"' << "blue" << '"';
-            /*if (i+1<num_raggi)*/ fpt << ", ";
+            fpt << ", ";
         }
         fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
 
@@ -158,7 +194,7 @@ namespace RelaxedLenses {
         fpy.close();
         system((std::string("gnuplot -p ") + OUTPUT_DIR + std::string("data.gp")).c_str()); // non funzionerà su windows forse
     }
-
+    
     void Sistema::OttimizzaPosizioneLente(Curva* a, Curva* b) {
         std::vector<double*> pino = { &(a->Quota), &(b->Quota) };
         OttimizzaParametriParalleli(pino);
@@ -236,7 +272,7 @@ namespace RelaxedLenses {
                 std::cout << "broke at : " <<j<< std::endl;
                 break;
             }
-            for (int i = 0; i < 2; i++) *p[i] += d[i] * eps;
+            for (int i = 0; i < 2; i++) *p[i] -= d[i] * eps;
         }
     }
 
@@ -247,13 +283,13 @@ namespace RelaxedLenses {
         for (int i = 0; (i < 24) && (crawl * crawl >= e); i++) {
             for (int j=0; j<a.size();j++) *a[j] += crawl;
             fx = GScore();
-            if (fx > cx) {
+            if (fx < cx) {
                 cx = fx;
                 continue;
             }
             for (int j=0; j<a.size();j++) *a[j] -= 2*crawl;
             bx = GScore();
-            if (bx > cx) {
+            if (bx < cx) {
                 cx = bx;
                 crawl = -crawl;
                 continue;
@@ -291,7 +327,7 @@ namespace RelaxedLenses {
                 break;
             }
             for (int i = 0; i < a.size(); i++) {
-                for (int k = 0; k < a[i].size(); k++) *a[i][k] += d[i] * eps;
+                for (int k = 0; k < a[i].size(); k++) *a[i][k] -= d[i] * eps;
             }
         }
     }

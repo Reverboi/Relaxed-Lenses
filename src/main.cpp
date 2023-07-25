@@ -42,7 +42,6 @@ int main(){
 	Punti* dw0 = current.NuovoPunti(inf ,0, 35, AIR, AIR,				  PLEXIGLASS_R, PLEXIGLASS_B);
 	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
 
-	
 	current.OttimizzaPosizioneSensore();
 	current.Gnuplotta("single.pdf");
 	inf.close();
@@ -52,7 +51,6 @@ int main(){
 
 	Punti* dw1 = current.NuovoPunti(inf, 120.5, 4.0, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
 	Punti* up1 = current.NuovoPunti(sup, 120.5, 4.0, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
-
 	current.OttimizzaPosizioneLente(dw1, up1);
 	//current.OttimizzaAmpiezzaLente(dw1, up1);
 	//current.OttimizzaAmpiezzaLente(dw0, up0);
