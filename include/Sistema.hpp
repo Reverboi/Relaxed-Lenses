@@ -6,12 +6,13 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+
 #define RISOLUZIONE_STANDARD 16
 #define e ldexp(1.0,-30)
 #define eps ldexp(1.0,-3)
 #define TRESH 10e-8
-#define OUTPUT_DIR std::string("../data/output/")
-#define PLOT_DIR std::string("../data/plot/")
+#define OUTPUT_DIR std::string("../../data/output/")
+#define PLOT_DIR std::string("../../data/plot/")
 namespace RelaxedLenses {
 	struct Sistema {
 

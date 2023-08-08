@@ -11,7 +11,7 @@ namespace RelaxedLenses {
 			IndiceBluSopra;
 		Curva(double quota, double amp, double r1, double b1, double r2, double b2) : Ampiezza(amp), Quota(quota), IndiceRossoSotto(r1), IndiceRossoSopra(r2), IndiceBluSotto(b1), IndiceBluSopra(b2) {};
 		Curva(double quota, double amp, double i1, double i2) : Ampiezza(amp), Quota(quota), IndiceRossoSotto(i1), IndiceRossoSopra(i2), IndiceBluSotto(i1), IndiceBluSopra(i2) {};
-		Curva() {};
+		//Curva() {};
 		virtual void Log(std::ofstream& fpt) const = 0;
 		virtual double operator()(double x)  const = 0;
 		virtual double Derivata(double x)   const = 0;

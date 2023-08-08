@@ -80,7 +80,7 @@ namespace RelaxedLenses {
     void Sistema::Elabora() {
         Data_d.clear();
         Data_f.clear();
-        for (int i = 0; i < NumeroRaggi; i++) {
+        for (int i = 0; i <= NumeroRaggi; i++) {
             Raggio R = Raggio(
                 RaggioIniziale.X + (RaggioFinale.X - RaggioIniziale.X) * i / NumeroRaggi,
                 RaggioIniziale.Y + (RaggioFinale.Y - RaggioIniziale.Y) * i / NumeroRaggi,
@@ -103,9 +103,9 @@ namespace RelaxedLenses {
         sens << Sensore.Ampiezza << " " << Sensore.Quota;
         sens.close();
         Elabora();
-        for (int i = 1; i < NumeroRaggi; i++) {		//creo i file per i singoli raggi
+        for (int i = 0; i <= NumeroRaggi; i++) {		//creo i file per i singoli raggi
             std::ofstream fpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));   //d
-            //std::ofstream rfpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));
+            std::ofstream mir(OUTPUT_DIR + std::to_string(i) + std::string("_d_mir.dat"));   //d
             if ((fpt.is_open()) == false) {
                 printf("Error! opening file");
                 exit(1);
@@ -113,10 +113,12 @@ namespace RelaxedLenses {
 
             for (int j = 0; j < Data_d[i].size(); j++) {
                 fpt << Data_d[i][j].X << " " << Data_d[i][j].Y << '\n';
+                mir << -Data_d[i][j].X << " " << Data_d[i][j].Y << '\n';
             }
             fpt.close();
-
+            mir.close();
             fpt = std::ofstream(OUTPUT_DIR + std::to_string(i) + std::string("_f.dat"));     //f
+            mir = std::ofstream(OUTPUT_DIR + std::to_string(i) + std::string("_f_mir.dat"));   //d
             if ((fpt.is_open()) == false) {
                 printf("Error! opening file");
                 exit(1);
@@ -124,8 +126,10 @@ namespace RelaxedLenses {
 
             for (int j = 0; j < Data_f[i].size(); j++) {
                 fpt << Data_f[i][j].X << " " << Data_f[i][j].Y << '\n';
+                mir << -Data_f[i][j].X << " " << Data_f[i][j].Y << '\n';
             }
             fpt.close();
+            mir.close();
         }
         std::ofstream fpt(OUTPUT_DIR + std::string("data.gp"));
         if ((fpt.is_open()) == false) {
@@ -142,9 +146,9 @@ namespace RelaxedLenses {
 
         Log(fpt);
 
-        for (int i = 1; i < NumeroRaggi; i++) {
-            fpt << "'" << OUTPUT_DIR << i << "_d.dat' u 1:2 with lines lt rgb " << '"' << "orange" << '"';
-            fpt << ", ";
+        for (int i = 0; i <= NumeroRaggi; i++) {
+            fpt << "'" << OUTPUT_DIR << i << "_d.dat' u 1:2 with lines lt rgb " << '"' << "orange" << '"' << ", ";
+            fpt << "'" << OUTPUT_DIR << i << "_d_mir.dat' u 1:2 with lines lt rgb " << '"' << "orange" << '"' << ", ";
         }
         fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
 
@@ -152,9 +156,9 @@ namespace RelaxedLenses {
 
         Log(fpt);
 
-        for (int i = 1; i < NumeroRaggi; i++) {
-            fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb " << '"' << "blue" << '"';
-            fpt << ", ";
+        for (int i = 0; i <= NumeroRaggi; i++) {
+            fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb " << '"' << "blue" << '"' << ", ";
+            fpt << "'" << OUTPUT_DIR << i << "_f_mir.dat' u 1:2 with lines lt rgb " << '"' << "blue" << '"' << ", ";
         }
         fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
 
@@ -173,7 +177,7 @@ namespace RelaxedLenses {
             printf("Error! opening file");
             exit(1);
         }
-        for (int i = 1; i < NumeroRaggi; i++) {
+        for (int i = 0; i <= NumeroRaggi; i++) {
             double x = Data_d[i].begin()->X;
             double t = Scarto(Data_d[i]);
             double s = Scarto(Data_f[i]);

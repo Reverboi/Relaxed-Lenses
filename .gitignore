@@ -6,3 +6,6 @@ scores.cpp
 .vscode
 scores.dat
 build/
+.vs
+install/
+CMakeSettings.json

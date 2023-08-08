@@ -1,16 +1,28 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 
-project(Relaxed-Lenses)
+project(Relaxed-Lenses VERSION 1.0.0 LANGUAGES CXX)
 
-# Set the C++ standard
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_library(${PROJECT_NAME} STATIC)
 
-# Add source files
-file(GLOB SOURCES "src/*.cpp")
+target_sources(${PROJECT_NAME}
+    PRIVATE
+        src/Arco.cpp
+        src/Curva.cpp
+        src/Polinomio.cpp
+        src/Punti.cpp
+        src/Raggio.cpp
+        src/Sistema.cpp
+)
 
-# Add include directory
-include_directories(include)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
 
-# Generate the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+# Optionally set compiler options and features
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+
+# Optional: Install the library
+install(TARGETS ${PROJECT_NAME}
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+ )
+install(DIRECTORY include/ DESTINATION include)
