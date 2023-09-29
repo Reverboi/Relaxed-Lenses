@@ -1,7 +1,7 @@
 #include "Punti.hpp"
 #include <string>
 #include <algorithm>
-
+#define OUTPUT_DIR std::string("../data/output/")
 namespace RelaxedLenses {
     double Punti :: operator()(double u) const {
         if (u != u) return NAN;
@@ -140,8 +140,15 @@ namespace RelaxedLenses {
     }
 
     void Punti::Log(std::ofstream& fpt) const {
+        std::ofstream giorgio(OUTPUT_DIR + std::to_string(Quota + P[0].y * Ampiezza) + std::string("-curva.dat"));
+        if (!giorgio.is_open()) return;
+        int s = 16;
+        for (int i = P.size() - 1; i >= 0; i-=s) giorgio << -P[i].x*Ampiezza << ' ' << P[i].y * Ampiezza +Quota<< std::endl;
+        for (int i = 1; i < P.size(); i+=s) giorgio << P[i].x * Ampiezza << ' ' << P[i].y * Ampiezza +Quota<< std::endl;
+        giorgio.close();
         if (fpt.is_open()) {
-            fpt << Quota << ", " << this->operator()(0) << ", ";
+            fpt << "'" << OUTPUT_DIR << std::to_string(Quota+P[0].y*Ampiezza) << "-curva.dat' u 1:2 with lines lt rgb " << '"' << "black" << '"';
+            fpt << ", ";
         }
     }
 }

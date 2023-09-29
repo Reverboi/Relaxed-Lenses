@@ -40,7 +40,8 @@ namespace RelaxedLenses {
 
 	Raggio Curva::Out_d(std::ofstream& fpt, const Raggio& I) const { //log version
 		double x = Intersect(I);
-		return Raggio(fpt, x, operator()(x), Snell(I.A - Angolo(x), IndiceRossoSopra / IndiceRossoSotto) + Angolo(x));
+		Raggio h = Raggio(fpt, x, operator()(x), Snell(I.A - Angolo(x), IndiceRossoSopra / IndiceRossoSotto) + Angolo(x));
+		return h;
 	}
 
 	Raggio Curva::Out_d(const Raggio& I) const {

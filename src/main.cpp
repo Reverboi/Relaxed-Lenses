@@ -30,7 +30,8 @@ int main(){
 	if ((inf.is_open()) == false){
             printf("Error! opening file");
             exit(1);
-        }
+		}
+
     ifstream sup ( INPUT_DIR + string("upPoints.dat"));
 	if ((sup.is_open()) == false){
             printf("Error! opening file");
@@ -39,27 +40,28 @@ int main(){
 
 	Sistema current = Sistema( ALTEZZA_SENSORE, DIMENSIONE_SENSORE,  CAMPO );
 	
-	Punti* dw0 = current.NuovoPunti(inf ,0, 35, AIR, AIR,				  PLEXIGLASS_R, PLEXIGLASS_B);
-	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
+	Arco* sott = current.NuovoArco(0, 35, -130, AIR, AIR, PLEXIGLASS, PLEXIGLASS);
+	Arco* sopr = current.NuovoArco(0, 35, 130, PLEXIGLASS, PLEXIGLASS, AIR, AIR);
+	//current.OttimizzaElemento(sopr);
+	//current.OttimizzaElemento(sott);
+	current.Gnuplotta("arcos.pdf");
+	current.RimuoviLente(sopr, sott);
 
-	current.OttimizzaPosizioneSensore();
-	current.Gnuplotta("single.pdf");
+	Punti* dw0 = current.NuovoPunti(inf, 0, 35, AIR, AIR,				  PLEXIGLASS_R, PLEXIGLASS_B);
+	Punti* up0 = current.NuovoPunti(sup, 0, 35, PLEXIGLASS_R, PLEXIGLASS_B,					AIR, AIR);
 	inf.close();
 	sup.close();
+	current.OttimizzaPosizioneSensore();
+	current.Gnuplotta("single.pdf");
+	
 	inf.open(INPUT_DIR + string("downPoints.dat"));
 	sup.open(INPUT_DIR + string("upPoints.dat"));
 
 	Punti* dw1 = current.NuovoPunti(inf, 120.5, 4.0, AIR, AIR, PLEXIGLASS_R, PLEXIGLASS_B);
 	Punti* up1 = current.NuovoPunti(sup, 120.5, 4.0, PLEXIGLASS_R, PLEXIGLASS_B, AIR, AIR);
 	current.OttimizzaPosizioneLente(dw1, up1);
-	//current.OttimizzaAmpiezzaLente(dw1, up1);
-	//current.OttimizzaAmpiezzaLente(dw0, up0);
-	//vector<double*> amp = { &up1->Ampiezza, &dw1->Ampiezza };
-	//vector<double*> quo = { &up1->Quota, &dw1->Quota };
-	//current.OttimizzaParametri(amp,quo);
 	current.OttimizzaPosizioneSensore();
 	current.Gnuplotta("double.pdf");
-	//current.OttimizzaPosizioneLente(dw1, up1);
 	inf.close();
 	sup.close();
 	inf.open(INPUT_DIR + string("downPoints.dat"));
@@ -75,6 +77,12 @@ int main(){
 	current.OttimizzaAmpiezzaSensore();
 	current.Sensore.Quota += 5;
 	current.Gnuplotta("triple.pdf");
+	current.RimuoviLente(dw1, up1);/*
+	current.OttimizzaAmpiezzaSensore();
+	current.OttimizzaPosizioneSensore();
+	current.OttimizzaAmpiezzaSensore();
+	*/
+	current.Gnuplotta("bis.pdf");
 	inf.close();
 	sup.close();
 

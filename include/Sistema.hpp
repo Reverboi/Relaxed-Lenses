@@ -7,8 +7,8 @@
 #include <vector>
 #include <algorithm>
 #define RISOLUZIONE_STANDARD 16
-#define e ldexp(1.0,-30)
-#define eps ldexp(1.0,-3)
+#define e ldexp(1.0,-50)
+#define eps ldexp(1.0,-16)
 #define TRESH 10e-8
 #define OUTPUT_DIR std::string("../data/output/")
 #define PLOT_DIR std::string("../data/plot/")
@@ -36,7 +36,9 @@ namespace RelaxedLenses {
 		//void Elabora(int res);
 		void Elabora();
 
-		void InserisciElemento(Curva*);		//viola la regola del one new one delete
+		void InserisciElemento(Curva*); //viola la regola del one new one delete
+		void RimuoviCurva(Curva*);
+		void RimuoviLente(Curva*, Curva*);
 		void OttimizzaPosizioneSensore();
 		double Score_d(double x) const;
 		double Score_f(double x) const;

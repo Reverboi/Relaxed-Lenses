@@ -4,7 +4,7 @@ namespace RelaxedLenses {
         Campo(camp),
         Sensore(*NuovoArco(altSen, dimSen, 1, 1, 1, 1)),
         RaggioIniziale(-camp, -altSen / 4.0, 0),
-        RaggioFinale(0, -altSen / 4.0, 0),
+        RaggioFinale(camp, -altSen / 4.0, 0),
         NumeroRaggi(RISOLUZIONE_STANDARD){}
     ;
 
@@ -103,6 +103,11 @@ namespace RelaxedLenses {
         sens << Sensore.Ampiezza << " " << Sensore.Quota;
         sens.close();
         Elabora();
+        /*
+        std::vector<std::ofstream> fp(Data_d[0].size());
+        for (int i = 0; i < Data_d[0].size(); i++) {
+            fp[i] = std::ofstream(OUTPUT_DIR + std::to_string(i) + std::string("-curva.dat"));
+        }*/
         for (int i = 1; i < NumeroRaggi; i++) {		//creo i file per i singoli raggi
             std::ofstream fpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));   //d
             //std::ofstream rfpt(OUTPUT_DIR + std::to_string(i) + std::string("_d.dat"));
@@ -113,6 +118,7 @@ namespace RelaxedLenses {
 
             for (int j = 0; j < Data_d[i].size(); j++) {
                 fpt << Data_d[i][j].X << " " << Data_d[i][j].Y << '\n';
+               // fp[j] << Data_d[i][j].X << " " << Data_d[i][j].Y << '\n';
             }
             fpt.close();
 
@@ -127,6 +133,11 @@ namespace RelaxedLenses {
             }
             fpt.close();
         }
+        /*
+        for (int i = 0; i < Data_d[0].size(); i++) {
+            fp[i].close();
+        }
+        */
         std::ofstream fpt(OUTPUT_DIR + std::string("data.gp"));
         if ((fpt.is_open()) == false) {
             printf("Error! opening file");
@@ -140,23 +151,32 @@ namespace RelaxedLenses {
 
         fpt << "plot [-" << Campo << ":" << Campo << "] [-20:" << Sensore.Quota + 20 << "] ";
 
-        Log(fpt);
-
         for (int i = 1; i < NumeroRaggi; i++) {
             fpt << "'" << OUTPUT_DIR << i << "_d.dat' u 1:2 with lines lt rgb " << '"' << "orange" << '"';
             fpt << ", ";
         }
-        fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
+        Log(fpt);
+        /*
+        for (int i = 1; i < Data_d[0].size(); i++) {
+            fpt << "'" << OUTPUT_DIR << i << "-curva.dat' u 1:2 with lines lt rgb " << '"' << "black" << '"';
+            fpt << ", ";
+        }
+        */
+        //fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
 
         fpt << "\nplot [-" << Campo << ":" << Campo << "] [-20:" << Sensore.Quota + 20 << "] ";
-
-        Log(fpt);
-
         for (int i = 1; i < NumeroRaggi; i++) {
             fpt << "'" << OUTPUT_DIR << i << "_f.dat' u 1:2 with lines lt rgb " << '"' << "blue" << '"';
             fpt << ", ";
         }
-        fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
+        Log(fpt);
+        /*
+        for (int i = 1; i < Data_d[0].size(); i++) {
+            fpt << "'" << OUTPUT_DIR << i << "-curva.dat' u 1:2 with lines lt rgb " << '"' << "black" << '"';
+            fpt << ", ";
+        }
+        */
+        //fpt << " '" << OUTPUT_DIR << "sensore.dat" << "' u 1:2 with lines lt rgb " << '"' << "green" << '"';
 
         fpt << "\nset xtics\n";
         fpt << "set xlabel " << '"' << "Campo inquadrato (mm)" << '"' << "\n";
@@ -218,9 +238,27 @@ namespace RelaxedLenses {
             Elemento[i]->Log(fpt);
         }
     }
+    void Sistema::RimuoviCurva(Curva* a) {
 
+        for (int i = 0; i < Elemento.size(); i++) {
+            if (a == Elemento[i]) {
+                Elemento.erase(Elemento.begin()+i);
+                break;
+            }
+        }
+    }
+    void Sistema::RimuoviLente(Curva* a, Curva* b) {
+        RimuoviCurva(a);
+        RimuoviCurva(b);
+    }
     Sistema :: ~Sistema() {
-        for (int i = 0; i < Elemento.size(); i++) delete Elemento[i];
+        for (int i = 0; i < Elemento.size(); i++)
+        {
+            if (Elemento[i]) {
+                delete Elemento[i];
+            }
+            Elemento.clear();
+        }
     }
 
     Arco* Sistema::NuovoArco(double quota, double amp, double rag, double r1, double b1, double r2, double b2) {
